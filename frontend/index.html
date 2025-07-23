@@ -1,16 +1,247 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#ffffff">
-  <title>Serverless Marketplace</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-</head>
-<body>
-  <div id="root"></div>
-  <script src="App.tsx" type="module"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="Advanced AI-powered coordination system for symbiotic resource allocation and community building"
+        />
+        <meta
+            name="keywords"
+            content="coordination, collaboration, AI, optimization, community, resources"
+        />
+        <meta name="author" content="Symbiotic Coordination Network" />
+
+        <!-- PWA Configuration -->
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#00ff88" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="Coordination Cosmos" />
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+
+        <!-- Preconnect to external domains for performance -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <!-- Google Fonts - Inter for modern, clean typography -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Additional CSS for immediate styling -->
+        <style>
+            /* Immediate loading styles to prevent flash */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            html,
+            body,
+            #root {
+                height: 100vh;
+                width: 100vw;
+                overflow: hidden;
+            }
+
+            body {
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    "Roboto",
+                    sans-serif;
+                background: linear-gradient(
+                    135deg,
+                    #0a0a0a 0%,
+                    #1a1a2e 50%,
+                    #16213e 100%
+                );
+                color: #ffffff;
+                user-select: none;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+
+            /* Loading animation */
+            .loading-container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: radial-gradient(
+                    ellipse at center,
+                    #1a1a2e 0%,
+                    #16213e 50%,
+                    #0a0a0a 100%
+                );
+                z-index: 9999;
+                transition: opacity 0.5s ease-out;
+            }
+
+            .loading-logo {
+                font-size: 2.5rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #00ff88, #00ccff);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 2rem;
+                text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            }
+
+            .loading-spinner {
+                width: 50px;
+                height: 50px;
+                border: 3px solid rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+                border-top: 3px solid #00ff88;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .loading-text {
+                margin-top: 1rem;
+                font-size: 1rem;
+                opacity: 0.7;
+                animation: pulse 2s ease-in-out infinite;
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 0.7;
+                }
+                50% {
+                    opacity: 1;
+                }
+            }
+
+            /* Hide loading when React app is ready */
+            .app-ready .loading-container {
+                opacity: 0;
+                pointer-events: none;
+            }
+        </style>
+
+        <title>Coordination Cosmos - Advanced Symbiotic Network</title>
+    </head>
+    <body>
+        <!-- Loading screen -->
+        <div class="loading-container" id="loading">
+            <div class="loading-logo">⚡ Coordination Cosmos</div>
+            <div class="loading-spinner"></div>
+            <div class="loading-text">
+                Initializing Advanced Coordination Systems...
+            </div>
+        </div>
+
+        <!-- React app root -->
+        <div id="root"></div>
+
+        <!-- Vite development script -->
+        <script type="module" src="/main.tsx"></script>
+
+        <!-- Service Worker Registration for PWA -->
+        <script>
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                    navigator.serviceWorker
+                        .register("/sw.js")
+                        .then((registration) => {
+                            console.log("SW registered: ", registration);
+                        })
+                        .catch((registrationError) => {
+                            console.log(
+                                "SW registration failed: ",
+                                registrationError,
+                            );
+                        });
+                });
+            }
+
+            // Hide loading screen when React app is ready
+            window.addEventListener("DOMContentLoaded", () => {
+                setTimeout(() => {
+                    const loading = document.getElementById("loading");
+                    if (loading) {
+                        loading.style.opacity = "0";
+                        setTimeout(() => {
+                            loading.style.display = "none";
+                        }, 500);
+                    }
+                }, 2000); // Show loading for at least 2 seconds
+            });
+
+            // Performance monitoring
+            window.addEventListener("load", () => {
+                if (window.performance) {
+                    const loadTime =
+                        window.performance.timing.loadEventEnd -
+                        window.performance.timing.navigationStart;
+                    console.log("🚀 Page load time:", loadTime + "ms");
+                }
+            });
+
+            // Error handling
+            window.addEventListener("error", (event) => {
+                console.error("Global error:", event.error);
+            });
+
+            window.addEventListener("unhandledrejection", (event) => {
+                console.error("Unhandled promise rejection:", event.reason);
+            });
+        </script>
+
+        <!-- Development tools script -->
+        <script>
+            if (
+                window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1"
+            ) {
+                console.log("🔧 Development mode active");
+
+                // Add development helpers
+                window.debugAura = {
+                    version: "1.0.0",
+                    build: "development",
+                    features: [
+                        "AI-Enhanced Coordination",
+                        "Real-time Optimization",
+                        "Advanced Aura Interface",
+                        "Symbiotic Matching",
+                    ],
+                };
+
+                console.log(
+                    "🌟 Coordination Cosmos Debug Info:",
+                    window.debugAura,
+                );
+            }
+        </script>
+    </body>
 </html>
