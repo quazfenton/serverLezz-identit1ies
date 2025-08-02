@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "scripts": {
     "start": "ts-node backend/server.ts",
-    "frontend": "cd frontend && vite"
+    "frontend": "cd frontend && vite",
+    "llm:demo": "ts-node mechanisms/llmOrchestration/cli.ts demo",
+    "llm:examples": "ts-node mechanisms/llmOrchestration/cli.ts examples",
+    "llm:test": "ts-node mechanisms/llmOrchestration/test.ts",
+    "llm:cli": "ts-node mechanisms/llmOrchestration/cli.ts"
   },
   "dependencies": {
+    "@genkit-ai/mcp": "^1.15.5",
     "cors": "^2.8.5",
     "express": "^4.18.3",
     "react": "^18.2.0",
