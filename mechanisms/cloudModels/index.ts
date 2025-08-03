@@ -39,73 +39,217 @@ export interface ModelCapability {
   accuracy: number;
   confidence: number;
   processingTime: number;
-}
+------- REPLACE
+  public async optimizeMatching(
+    sourceProfile: Profile,
+    candidateProfiles: Profile[],
+  ): Promise<MatchingResult[]> {
+    // Mock AI call for matching optimization
+    const mockMatches: MatchingResult[] = candidateProfiles.slice(0, 3).map((candidate, index) => ({
+      profileA: sourceProfile.id,
+      profileB: candidate.id,
+      matchScore: 0.5 + index * 0.15, // Simulate varying scores
+      dimensions: [
+        { dimension: "resources", similarity: 0.6, complementarity: 0.7, synergy: 0.65, weight: 0.3 },
+        { dimension: "skills", similarity: 0.7, complementarity: 0.5, synergy: 0.6, weight: 0.25 },
+        { dimension: "location", similarity: 0.8, complementarity: 0, synergy: 0.4, weight: 0.2 },
+        { dimension: "values", similarity: 0.5, complementarity: 0.4, synergy: 0.45, weight: 0.15 },
+        { dimension: "behavior", similarity: 0.6, complementarity: 0.3, synergy: 0.45, weight: 0.1 },
+      ],
+      potentialValue: 10 + index * 5,
+      socialWelfare: 0.6 + index * 0.1,
+      coordinationCost: 0.1 + index * 0.05,
+      recommendedAction: {
+        type: index === 0 ? "collaborate" : "make_offer",
+        priority: 0.9 - index * 0.2,
+        confidence: 0.5 + index * 0.15,
+        expectedOutcome: { utilityGain: 10 + index * 3 },
+        requiredResources: ["communication"],
+        timeline: { start: new Date(), end: new Date(Date.now() + (7 - index * 2) * 24 * 60 * 60 * 1000) },
+      },
+    }));
 
-export interface ModelPerformance {
-  accuracy: number;
-  precision: number;
-  recall: number;
-  f1Score: number;
-  latency: number;
-  throughput: number;
-  errorRate: number;
-  lastEvaluated: Date;
-}
+    // In a real scenario, this would call an AI model via processRequest
+    // const matchingModel = this.selectBestModel("matching_optimization");
+    // const request: AIRequest = { ... };
+    // const response = await this.processRequest(request);
+    // return this.parseMatchingResults(response.outputData.matches, sourceProfile, candidateProfiles);
 
-export interface RateLimit {
-  requestsPerMinute: number;
-  requestsPerHour: number;
-  requestsPerDay: number;
-  currentUsage: number;
-  resetTime: Date;
-}
+    return mockMatches;
+  }
 
-export interface AIRequest {
-  id: string;
-  modelId: string;
-  inputData: any;
-  requestType: RequestType;
-  priority: number;
-  timestamp: Date;
-  userId?: string;
-}
+  // Placeholder implementations for missing methods
+  private getHistoricalResourceData(profileId: string): any {
+    // Mock data for historical resource patterns
+    return {
+      resourceUsageHistory: [
+        { resource: "skill:web_design", usage: 0.8, trend: "increasing" },
+        { resource: "good:car_share", usage: 0.5, trend: "stable" },
+      ],
+      identifiedGaps: ["skill:marketing", "need:gardening_help"],
+    };
+  }
 
-export interface AIResponse {
-  requestId: string;
-  modelId: string;
-  outputData: any;
-  confidence: number;
-  processingTime: number;
-  cost: number;
-  timestamp: Date;
-  error?: string;
-}
+  private getInteractionHistory(profileId: string): any {
+    // Mock data for interaction history
+    return {
+      recentInteractions: [
+        { type: "message", target: "profile:bob", outcome: "positive", timestamp: Date.now() - 3600000 },
+        { type: "view", target: "listing:logo_design", outcome: "neutral", timestamp: Date.now() - 7200000 },
+      ],
+      overallActivity: 0.7,
+    };
+  }
 
-export type RequestType =
-  | "profile_enhancement"
-  | "behavior_analysis"
-  | "preference_prediction"
-  | "match_optimization"
-  | "content_generation"
-  | "sentiment_analysis"
-  | "trend_analysis";
+  private getContextualFactors(profile: Profile): any {
+    // Mock contextual factors
+    return {
+      location: profile.location,
+      timeOfDay: new Date().getHours(),
+      dayOfWeek: new Date().getDay(),
+    };
+  }
 
-// ==================== MAIN CLOUD MODEL ENGINE ====================
+  private getTimeSeriesData(profileId: string): any {
+    // Mock time series data for behavior prediction
+    return [
+      { timestamp: Date.now() - 86400000, value: 0.5 },
+      { timestamp: Date.now() - 43200000, value: 0.6 },
+      { timestamp: Date.now() - 21600000, value: 0.7 },
+    ];
+  }
 
-export class CloudModelEngine {
-  private models: Map<string, CloudModel>;
-  private requestQueue: AIRequest[];
-  private responseCache: Map<string, AIResponse>;
-  private ensembleWeights: Map<string, number>;
-  private performanceHistory: Map<string, ModelPerformance[]>;
+  private getTransactionHistory(profileId: string): any {
+    // Mock transaction history
+    return [
+      { transactionId: "tx_123", type: "service", outcome: "success", timestamp: Date.now() - 172800000 },
+    ];
+  }
 
-  constructor() {
-    this.models = new Map();
-    this.requestQueue = [];
-    this.responseCache = new Map();
-    this.ensembleWeights = new Map();
-    this.performanceHistory = new Map();
-    this.initializeDefaultModels();
+  private getFeedbackData(profileId: string): any {
+    // Mock feedback data
+    return [
+      { source: "listing:logo_design", rating: 5, comment: "Great service!", timestamp: Date.now() - 172800000 },
+    ];
+  }
+
+  private getDemographicContext(profile: Profile): any {
+    // Mock demographic context
+    return {
+      ageGroup: "25-34",
+      incomeLevel: "mid",
+      education: "university",
+    };
+  }
+
+  private getNetworkContext(profileId: string): any {
+    // Mock network context (e.g., number of connections, community size)
+    return {
+      connections: 15,
+      communitySize: 100,
+      centrality: 0.6,
+    };
+  }
+
+  private async predictBehaviorPatterns(
+    profile: Profile,
+  ): Promise<BehaviorProfile> {
+    // Mock AI call for behavior prediction
+    const mockResponse = {
+      patterns: [
+        { type: "message", target: "profile:bob", outcome: "positive", timestamp: Date.now() - 3600000 },
+        { type: "view", target: "listing:logo_design", outcome: "neutral", timestamp: Date.now() - 7200000 },
+      ],
+      preferences: {
+        resourcePreferences: { "skill:web_design": 0.9, "good:car_share": 0.7 },
+        timePreferences: ["weekends", "evenings"],
+        socialPreferences: ["collaborative", "analytical"],
+        qualityWeights: { reliability: 0.8, responsiveness: 0.7 },
+        priceElasticity: { "service:web_design": 0.5 },
+      },
+      actions: [
+        { action: "propose_collaboration", confidence: 0.8, outcome: { utilityGain: 5 } },
+        { action: "offer_resource", confidence: 0.7, outcome: { utilityGain: 3 } },
+      ],
+      adaptationRate: 0.6,
+      consistencyScore: 0.75,
+      socialStyle: "collaborative",
+      decisionStyle: "analytical",
+    };
+
+    // In a real scenario, this would call an AI model via processRequest
+    // const behaviorModel = this.selectBestModel("behavior_prediction");
+    // const request: AIRequest = { ... };
+    // const response = await this.processRequest(request);
+
+    return {
+      interactionPatterns: this.parseInteractionPatterns(
+        mockResponse.patterns,
+      ),
+      preferences: this.parseLearnedPreferences(
+        mockResponse.preferences,
+      ),
+      predictedActions: this.parsePredictedActions(
+        mockResponse.actions,
+      ),
+      adaptationRate: mockResponse.adaptationRate,
+      consistencyScore: mockResponse.consistencyScore,
+      socialStyle: mockResponse.socialStyle,
+      decisionMakingStyle: mockResponse.decisionStyle,
+    };
+  }
+
+  // ==================== ADVANCED MATCHING OPTIMIZATION ====================
+
+  public async optimizeMatching(
+    sourceProfile: Profile,
+    candidateProfiles: Profile[],
+  ): Promise<MatchingResult[]> {
+    // Mock AI call for matching optimization
+    const mockMatches: MatchingResult[] = candidateProfiles.slice(0, 3).map((candidate, index) => ({
+      profileA: sourceProfile.id,
+      profileB: candidate.id,
+      matchScore: 0.5 + index * 0.15, // Simulate varying scores
+      dimensions: [
+        { dimension: "resources", similarity: 0.6, complementarity: 0.7, synergy: 0.65, weight: 0.3 },
+        { dimension: "skills", similarity: 0.7, complementarity: 0.5, synergy: 0.6, weight: 0.25 },
+        { dimension: "location", similarity: 0.8, complementarity: 0, synergy: 0.4, weight: 0.2 },
+        { dimension: "values", similarity: 0.5, complementarity: 0.4, synergy: 0.45, weight: 0.15 },
+        { dimension: "behavior", similarity: 0.6, complementarity: 0.3, synergy: 0.45, weight: 0.1 },
+      ],
+      potentialValue: 10 + index * 5,
+      socialWelfare: 0.6 + index * 0.1,
+      coordinationCost: 0.1 + index * 0.05,
+      recommendedAction: {
+        type: index === 0 ? "collaborate" : "make_offer",
+        priority: 0.9 - index * 0.2,
+        confidence: 0.5 + index * 0.15,
+        expectedOutcome: { utilityGain: 10 + index * 3 },
+        requiredResources: ["communication"],
+        timeline: { start: new Date(), end: new Date(Date.now() + (7 - index * 2) * 24 * 60 * 60 * 1000) },
+      },
+    }));
+
+    // In a real scenario, this would call an AI model via processRequest
+    // const matchingModel = this.selectBestModel("matching_optimization");
+    // const request: AIRequest = { ... };
+    // const response = await this.processRequest(request);
+    // return this.parseMatchingResults(response.outputData.matches, sourceProfile, candidateProfiles);
+
+    return mockMatches;
+  }
+
+  // Placeholder implementations for missing methods
+  private getHistoricalResourceData(profileId: string): any {
+    // Mock data for historical resource patterns
+    return {
+      resourceUsageHistory: [
+        { resource: "skill:web_design", usage: 0.8, trend: "increasing" },
+        { resource: "good:car_share", usage: 0.5, trend: "stable" },
+      ],
+      identifiedGaps: ["skill:marketing", "need:gardening_help"],
+    };
+------- REPLACE
   }
 
   // ==================== PROFILE ENHANCEMENT ====================
@@ -144,73 +288,245 @@ export class CloudModelEngine {
   }
 
   private async analyzeResourcePatterns(profile: Profile): Promise<any> {
-    const request: AIRequest = {
-      id: this.generateRequestId(),
-      modelId: "resource-analyzer",
-      inputData: {
-        goods: profile.resources.goods,
-        skills: profile.resources.skills,
-        needs: profile.resources.needs,
-        historicalData: this.getHistoricalResourceData(profile.id),
-      },
-      requestType: "profile_enhancement",
-      priority: 1,
-      timestamp: new Date(),
-      userId: profile.id,
+    // Mock AI call for resource pattern analysis
+    const mockResponse = {
+      suggestedGoods: profile.resources.goods.map(g => ({ ...g, quantity: g.quantity * 0.9 })), // Suggest slightly less if overstocked
+      identifiedSkillGaps: ["skill:marketing", "skill:data_analysis"], // Mock identified gaps
+      prioritizedNeeds: profile.resources.needs.map(n => ({ ...n, priority: n.priority * 1.1 })), // Slightly increase priority
+      synergies: ["skill:web_design with need:marketing_help", "good:car_share with need:rides_to_work"],
     };
 
-    const response = await this.processRequest(request);
+    // In a real scenario, this would call an AI model via processRequest
+    // const response = await this.processRequest(request);
 
     return {
-      optimizedGoods: response.outputData.suggestedGoods,
-      skillGaps: response.outputData.identifiedSkillGaps,
-      needsPrioritization: response.outputData.prioritizedNeeds,
-      resourceSynergies: response.outputData.synergies,
+      optimizedGoods: mockResponse.suggestedGoods,
+      skillGaps: mockResponse.identifiedSkillGaps,
+      needsPrioritization: mockResponse.prioritizedNeeds,
+      resourceSynergies: mockResponse.resourceSynergies,
     };
   }
 
-  private async predictBehaviorPatterns(
-    profile: Profile,
-  ): Promise<BehaviorProfile> {
-    const behaviorModel = this.selectBestModel("behavior_prediction");
-
-    const request: AIRequest = {
-      id: this.generateRequestId(),
-      modelId: behaviorModel.id,
-      inputData: {
-        currentBehavior: profile.behaviorProfile,
-        interactionHistory: this.getInteractionHistory(profile.id),
-        contextualFactors: this.getContextualFactors(profile),
-        timeSeriesData: this.getTimeSeriesData(profile.id),
-      },
-      requestType: "behavior_analysis",
-      priority: 2,
-      timestamp: new Date(),
-      userId: profile.id,
-    };
-
-    const response = await this.processRequest(request);
-
+  private getCurrentMarketConditions(): any {
+    // Mock market conditions
     return {
-      interactionPatterns: this.parseInteractionPatterns(
-        response.outputData.patterns,
-      ),
-      preferences: this.parseLearnedPreferences(
-        response.outputData.preferences,
-      ),
-      predictedActions: this.parsePredictedActions(response.outputData.actions),
-      adaptationRate:
-        response.outputData.adaptationRate ||
-        profile.behaviorProfile.adaptationRate,
-      consistencyScore:
-        response.outputData.consistencyScore ||
-        profile.behaviorProfile.consistencyScore,
-      socialStyle:
-        response.outputData.socialStyle || profile.behaviorProfile.socialStyle,
-      decisionMakingStyle:
-        response.outputData.decisionStyle ||
-        profile.behaviorProfile.decisionMakingStyle,
+      supplyDemandRatio: 0.9,
+      priceVolatility: 0.1,
+      trendingNeeds: ["skill:marketing", "good:organic_food"],
     };
+  }
+
+  private getSocialGraphContext(profileId: string): any {
+    // Mock social graph context (e.g., influence, trust score)
+    return {
+      influenceScore: 0.7,
+      trustScore: 0.8,
+    };
+  }
+
+  private getHistoricalSystemMetrics(): any {
+    // Mock historical system metrics
+    return {
+      utilityTrend: "increasing",
+      wasteTrend: "decreasing",
+      equityTrend: "stable",
+    };
+  }
+
+  private getSystemConstraints(): any {
+    // Mock system constraints
+    return [
+      { id: "resource_limit", type: "resource_limit", parameters: { maxResources: 1000 }, hardness: "hard", weight: 1, violated: false },
+    ];
+  }
+
+  private getCurrentNetworkTopology(): any {
+    // Mock network topology
+    return {
+      nodes: 100,
+      edges: 200,
+      density: 0.02,
+      averageDegree: 4,
+    };
+  }
+
+  private getCurrentContext(profileId: string): any {
+    // Mock current context
+    return {
+      currentLocation: { latitude: 37.7749, longitude: -122.4194 },
+      currentTime: new Date(),
+    };
+  }
+
+  private getLearningHistory(profileId: string): any {
+    // Mock learning history
+    return {
+      adaptationCycles: 5,
+      lastAdaptation: Date.now() - 3600000,
+    };
+  }
+
+  private sanitizeProfileForAI(profile: Profile): any {
+    return {
+      id: profile.id,
+      resources: {
+        goods: profile.resources.goods.map(g => ({ name: g.name, quantity: g.quantity, utility: g.utility })),
+        skills: profile.resources.skills.map(s => ({ name: s.name, proficiency: s.proficiencyLevel })),
+        needs: profile.resources.needs.map(n => ({ name: n.name, urgency: n.urgency })),
+      },
+      location: profile.location,
+      economicProfile: {
+        valueAlignment: profile.economicProfile.valueAlignment,
+        wealthLevel: profile.economicProfile.wealthLevel,
+      },
+      behaviorProfile: {
+        socialStyle: profile.behaviorProfile.socialStyle,
+        decisionMakingStyle: profile.behaviorProfile.decisionMakingStyle,
+        consistencyScore: profile.behaviorProfile.consistencyScore,
+      },
+    };
+  }
+
+  private mergeEnhancement(
+    profile: Profile,
+    enhancement: any,
+    index: number,
+  ): Profile {
+    // Merge enhancement results back into profile
+    let updatedProfile = { ...profile };
+
+    if (enhancement.optimizedGoods) {
+      updatedProfile.resources.goods = enhancement.optimizedGoods;
+    }
+    if (enhancement.skillGaps) {
+      // Add identified skill gaps as potential needs or areas for development
+      updatedProfile.resources.needs = [
+        ...updatedProfile.resources.needs,
+        ...enhancement.skillGaps.map((gap: string) => ({
+          id: `need_${gap.replace(':', '_')}`,
+          name: gap,
+          category: "development",
+          urgency: 0.5,
+          priority: 0.6,
+          quantity: 1,
+          unit: "skill",
+          alternatives: [],
+          tags: [gap.split(':')[1]?.toLowerCase() || 'skill'],
+        })),
+      ];
+    }
+    if (enhancement.needsPrioritization) {
+      // Reorder needs based on prioritization
+      updatedProfile.resources.needs.sort((a, b) => {
+        const aIndex = enhancement.needsPrioritization.indexOf(a.name);
+        const bIndex = enhancement.needsPrioritization.indexOf(b.name);
+        return aIndex - bIndex;
+      });
+    }
+    if (enhancement.resourceSynergies) {
+      // Could potentially update preferences or suggest new offerings/needs
+      console.log("Resource synergies identified:", enhancement.resourceSynergies);
+    }
+
+    return updatedProfile;
+  }
+
+  private calculateEnhancedWeight(profile: Profile, results: any[]): number {
+    let weight = profile.weight;
+    // Increase weight based on positive AI insights
+    if (results[0]?.status === "fulfilled" && results[0].value?.resourceSynergies) {
+      weight *= 1.05; // Boost for resource synergies
+    }
+    if (results[1]?.status === "fulfilled" && results[1].value?.preferences) {
+      weight *= 1.02; // Boost for preference learning
+    }
+    return Math.min(1, weight);
+  }
+
+  private parseInteractionPatterns(patterns: any): InteractionPattern[] {
+    if (!patterns || !Array.isArray(patterns)) return [];
+    return patterns.map((p: any) => ({
+      type: p.type || "unknown",
+      target: p.target || "unknown",
+      outcome: p.outcome || "neutral",
+      timestamp: new Date(p.timestamp || Date.now()),
+    }));
+  }
+  private parseLearnedPreferences(preferences: any): LearnedPreferences {
+    return {
+      resourcePreferences: preferences.resourcePreferences || {},
+      timePreferences: preferences.timePreferences || [],
+      socialPreferences: preferences.socialPreferences || [],
+      qualityWeights: preferences.qualityWeights || [],
+      priceElasticity: preferences.priceElasticity || {},
+    };
+  }
+  private parsePredictedActions(actions: any): PredictedAction[] {
+    if (!actions || !Array.isArray(actions)) return [];
+    return actions.map((a: any) => ({
+      action: a.action || "unknown",
+      confidence: a.confidence || 0.5,
+      predictedOutcome: a.outcome || {},
+    }));
+  }
+  private parseMatchingResults(
+    matches: any,
+    source: Profile,
+    candidates: Profile[],
+  ): MatchingResult[] {
+    if (!matches || !Array.isArray(matches)) return [];
+
+    return matches.map((match: any) => {
+      const candidate = candidates.find(p => p.id === match.profileId);
+      return {
+        profileA: source.id,
+        profileB: match.profileId,
+        matchScore: match.score || 0.5,
+        dimensions: match.dimensions || [],
+        potentialValue: match.potentialValue || 0,
+        socialWelfare: match.socialWelfare || 0,
+        coordinationCost: match.coordinationCost || 0.1,
+        recommendedAction: match.recommendedAction || { type: "view", priority: 0.3 },
+      };
+    });
+  }
+  private parseOptimizationRecommendations(
+    recommendations: any,
+  ): RecommendedAction[] {
+    if (!recommendations || !Array.isArray(recommendations)) return [];
+    return recommendations.map((rec: any) => ({
+      action: rec.action || "adjust_parameter",
+      target: rec.target || "unknown",
+      value: rec.value,
+      priority: rec.priority || 0.5,
+      justification: rec.justification || "Based on system analysis",
+    }));
+  }
+
+  private mergeOutputs(
+    combined: any,
+    output: any,
+    weight: number,
+    type: RequestType,
+  ): any {
+    // Simple merging for now, could be more sophisticated based on type
+    return { ...combined, ...output };
+  }
+
+  private updateEnsembleWeights(performance: any): void {
+    // Update ensemble weights based on performance feedback
+  }
+
+  private async updateProfileAdaptations(
+    profileId: string,
+    adaptations: any,
+  ): Promise<void> {
+    // Update profile based on learned adaptations
+    const profile = this.models.get(profileId); // This is incorrect, should be from the main server's profile store
+    if (profile) {
+      // Example: Update preferences based on adaptations
+      // profile.resources.preferences = { ...profile.resources.preferences, ...adaptations.preferences };
+    }
   }
 
   private async optimizePreferences(
@@ -406,67 +722,62 @@ export class CloudModelEngine {
       profileId,
       response.outputData.adaptations,
     );
+------- REPLACE
   }
 
-  // ==================== CORE PROCESSING METHODS ====================
+  // ==================== PROFILE ENHANCEMENT ====================
 
-  private async processRequest(request: AIRequest): Promise<AIResponse> {
-    // Check cache first
-    const cacheKey = this.generateCacheKey(request);
-    const cachedResponse = this.responseCache.get(cacheKey);
+  public async enhanceProfile(profile: Profile): Promise<Profile> {
+    const enhancementTasks = [
+      this.analyzeResourcePatterns(profile),
+      this.predictBehaviorPatterns(profile),
+      this.optimizePreferences(profile),
+      this.calculateSocialImpactPotential(profile),
+      this.generatePersonalityInsights(profile),
+    ];
 
-    if (cachedResponse && this.isCacheValid(cachedResponse)) {
-      return cachedResponse;
-    }
+    const results = await Promise.allSettled(enhancementTasks);
 
-    const model = this.models.get(request.modelId);
-    if (!model) {
-      throw new Error(`Model ${request.modelId} not found`);
-    }
+    let enhancedProfile = { ...profile };
 
-    // Check rate limits
-    if (!this.checkRateLimit(model)) {
-      // Queue the request for later processing
-      this.requestQueue.push(request);
-      throw new Error(`Rate limit exceeded for model ${request.modelId}`);
-    }
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        enhancedProfile = this.mergeEnhancement(
+          enhancedProfile,
+          result.value,
+          index,
+        );
+      }
+    });
 
-    try {
-      const startTime = Date.now();
-      const apiResponse = await this.callModelAPI(model, request);
-      const processingTime = Date.now() - startTime;
+    // Update profile weight based on AI insights
+    enhancedProfile.weight = this.calculateEnhancedWeight(
+      enhancedProfile,
+      results,
+    );
+    enhancedProfile.lastUpdated = new Date();
 
-      const response: AIResponse = {
-        requestId: request.id,
-        modelId: request.modelId,
-        outputData: apiResponse.data,
-        confidence: apiResponse.confidence || 0.8,
-        processingTime,
-        cost: this.calculateRequestCost(model, request),
-        timestamp: new Date(),
-      };
+    return enhancedProfile;
+  }
 
-      // Cache the response
-      this.responseCache.set(cacheKey, response);
+  private async analyzeResourcePatterns(profile: Profile): Promise<any> {
+    // Mock AI call for resource pattern analysis
+    const mockResponse = {
+      suggestedGoods: profile.resources.goods.map(g => ({ ...g, quantity: g.quantity * 0.9 })), // Suggest slightly less if overstocked
+      identifiedSkillGaps: ["skill:marketing", "skill:data_analysis"], // Mock identified gaps
+      prioritizedNeeds: profile.resources.needs.map(n => ({ ...n, priority: n.priority * 1.1 })), // Slightly increase priority
+      synergies: ["skill:web_design with need:marketing_help", "good:car_share with need:rides_to_work"],
+    };
 
-      // Update model performance metrics
-      this.updateModelPerformance(model.id, response, apiResponse.groundTruth);
+    // In a real scenario, this would call an AI model via processRequest
+    // const response = await this.processRequest(request);
 
-      return response;
-    } catch (error) {
-      const errorResponse: AIResponse = {
-        requestId: request.id,
-        modelId: request.modelId,
-        outputData: null,
-        confidence: 0,
-        processingTime: 0,
-        cost: 0,
-        timestamp: new Date(),
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-
-      return errorResponse;
-    }
+    return {
+      optimizedGoods: mockResponse.suggestedGoods,
+      skillGaps: mockResponse.identifiedSkillGaps,
+      needsPrioritization: mockResponse.prioritizedNeeds,
+      resourceSynergies: mockResponse.resourceSynergies,
+    };
   }
 
   private async callModelAPI(

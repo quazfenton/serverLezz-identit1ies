@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  # Main LLM Orchestrator Service
+  llm-orchestrator:
+    build:
+      context: .
+      target: production
+    container_name: llm-orchestrator-main
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - ENABLE_WEBSOCKET=true
+      - ENABLE_CORS=true
+      - ENABLE_RATE_LIMIT=true
+      - MAX_REQUESTS_PER_MINUTE=100
+      
+      # LLM Provider API Keys (set in .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      
+      # Redis connection (if using Redis for caching)
+      - REDIS_URL=redis://redis:6379
+      
+      # Database connection (if using PostgreSQL)
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/llm_orchestrator
+      
+      # Monitoring
+      - ENABLE_METRICS=true
+      - METRICS_INTERVAL=30
+      
+      # Evolution settings
+      - ENABLE_EVOLUTION=true
+      - EVOLUTION_INTERVAL=60
+      
+      # Security
+      - ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+    
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    
+    depends_on:
+      - redis
+      - postgres
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - llm-orchestrator-network
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: llm-orchestrator-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - llm-orchestrator-network
+
+  # PostgreSQL for persistent data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: llm-orchestrator-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=llm_orchestrator
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - llm-orchestrator-network
+
+  # Nginx reverse proxy and load balancer
+  nginx:
+    image: nginx:alpine
+    container_name: llm-orchestrator-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - llm-orchestrator
+    restart: unless-stopped
+    networks:
+      - llm-orchestrator-network
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: llm-orchestrator-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - llm-orchestrator-network
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: llm-orchestrator-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - llm-orchestrator-network
+
+  # Development service
+  llm-orchestrator-dev:
+    build:
+      context: .
+      target: development
+    container_name: llm-orchestrator-dev
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    volumes:
+      - .:/app
+      - /app/node_modules
+    profiles:
+      - dev
+    networks:
+      - llm-orchestrator-network
+
+volumes:
+  redis_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  llm-orchestrator-network:
+    driver: bridge

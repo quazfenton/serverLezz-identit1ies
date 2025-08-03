@@ -1,527 +1,502 @@
-# LLM OrchA System
+# Advanced LLM Orchestration System
 
-A sophisticated, error-proofed serverless program for managing and orchestrating Large Language Model (LLM) API calls with advanced features including prompt evolution, multi-provider coordination, and intelligent caching.
+A production-ready, highly scalable LLM orchestration system with intelligent caching, prompt evolution, multi-provider support, and advanced analytics.
 
 ## 🚀 Features
 
-### Core Orchestration
-- **Multi-Provider Support**: Seamlessly coordinate between OpenAI, Anthropic, Google, and custom providers
-- **Intelligent Strategy Selection**: Sequential, parallel, ensemble, fallback, adaptive, and competitive execution strategies
-- **Advanced Error Handling**: Circuit breakers, retry logic with exponential backoff, and graceful degradation
-- **Performance Monitoring**: Real-time metrics, provider ranking, and optimization recommendations
+### Core Capabilities
+- **Multi-Provider Support**: OpenAI, Anthropic, Google Gemini, and extensible for more
+- **Intelligent Orchestration**: Sequential, parallel, ensemble, fallback, adaptive, and competitive strategies
+- **Prompt Evolution**: AI-driven prompt optimization with genetic algorithms and reinforcement learning
+- **Task Classification**: Automatic task classification with provider optimization
+- **Multimodal Processing**: Support for text, image, audio, and video processing
+- **Advanced Caching**: Intelligent caching with predictive algorithms and semantic similarity
+- **Real-time Analytics**: Comprehensive performance monitoring and analytics
+- **Feedback Learning**: Human and AI feedback integration for continuous improvement
 
-### Prompt Evolution System
-- **Automated Prompt Improvement**: AI-driven prompt evolution based on performance metrics
-- **Variation Generation**: Create and test multiple prompt variations automatically
-- **Performance-Based Selection**: Choose the best performing prompts based on quality, creativity, and practicality
-- **Continuous Learning**: Adapt prompts over time based on usage patterns and feedback
+### Production Features
+- **Circuit Breakers**: Automatic failure detection and recovery
+- **Rate Limiting**: Dynamic rate limiting with provider-specific policies
+- **WebSocket Support**: Real-time updates and monitoring
+- **RESTful API**: Complete REST API for all orchestration operations
+- **Event-Driven Architecture**: Comprehensive event system for monitoring
+- **Graceful Shutdown**: Proper cleanup and state persistence
+- **Health Checks**: Built-in health monitoring and diagnostics
 
-### Storage & Organization
-- **Flexible Storage**: Support for filesystem, database, and cloud storage backends
-- **Structured Organization**: Automatic folder/file organization with separators and metadata
-- **Response Archiving**: Complete response history with provider details and performance metrics
-- **Markdown Documentation**: Auto-generated documentation for prompts and responses
+### Deployment & Scaling
+- **PM2 Integration**: Production process management with clustering
+- **Docker Support**: Multi-stage builds with optimization
+- **Docker Compose**: Complete stack deployment
+- **Load Balancing**: Nginx reverse proxy configuration
+- **Monitoring Stack**: Prometheus and Grafana integration
+- **Background Workers**: Separate worker processes for heavy tasks
 
-### Advanced Capabilities
-- **Intelligent Caching**: LRU cache with TTL and quality-based storage decisions
-- **Rate Limiting**: Configurable rate limiting per provider and user
-- **Quality Assessment**: Multi-dimensional quality scoring (relevance, coherence, creativity, accuracy)
-- **Cost Optimization**: Automatic provider selection based on cost-effectiveness
-- **Real-time Analytics**: Performance dashboards and optimization insights
-
-## 📁 Project Structure
-
-```
-mechanisms/llmOrchestration/
-├── index.ts              # Core orchestration engine and types
-├── orchestrator.ts       # Main orchestrator class with advanced features
-├── config.ts             # Configuration management and presets
-├── utils.ts              # Utilities (retry, circuit breaker, caching, etc.)
-├── examples.ts           # Comprehensive usage examples
-├── cli.ts                # Command-line interface
-└── README.md             # This documentation
-```
-
-## 🛠️ Installation & Setup
+## 📦 Installation
 
 ### Prerequisites
-- Node.js 18+ with TypeScript support
-- API keys for desired LLM providers
+- Node.js 18+ 
+- npm 8+
+- Docker (optional)
+- PM2 (for production deployment)
+
+### Quick Start
+
+1. **Clone and Install**
+```bash
+git clone <repository-url>
+cd mechanisms/llmOrchestration
+npm install
+```
+
+2. **Environment Setup**
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit with your API keys
+nano .env
+```
+
+3. **Build and Run**
+```bash
+# Development
+npm run dev
+
+# Production build
+npm run build
+npm start
+
+# With PM2
+npm run pm2:start
+```
+
+## 🔧 Configuration
 
 ### Environment Variables
+
 ```bash
-# Required for providers you want to use
+# Server Configuration
+PORT=3000
+HOST=0.0.0.0
+NODE_ENV=production
+
+# API Keys
 OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_anthropic_key
 GOOGLE_API_KEY=your_google_key
 
-# Optional configuration
-NODE_ENV=development|production|research
-LLM_RESEARCH_MODE=true|false
-DATABASE_URL=postgresql://...
-AWS_ACCESS_KEY_ID=your_aws_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret
-S3_BUCKET=your_bucket_name
-AWS_REGION=us-east-1
+# Features
+ENABLE_WEBSOCKET=true
+ENABLE_CORS=true
+ENABLE_RATE_LIMIT=true
+MAX_REQUESTS_PER_MINUTE=100
+
+# Evolution & Learning
+ENABLE_EVOLUTION=true
+EVOLUTION_INTERVAL=60
+ENABLE_METRICS=true
+METRICS_INTERVAL=30
+
+# Caching
+CACHE_TTL=300
+CACHE_MAX_SIZE=1000
+
+# Security
+ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
 ```
 
-### Basic Setup
-```typescript
-import { createAndInitializeOrchestrator } from './mechanisms/llmOrchestration/orchestrator';
+### Advanced Configuration
 
-// Create orchestrator with default configuration
+The system supports extensive configuration through the `LLMOrchestrationConfig` interface:
+
+```typescript
+const config: Partial<LLMOrchestrationConfig> = {
+  providers: [
+    {
+      id: 'openai-gpt4',
+      name: 'OpenAI GPT-4',
+      type: 'openai',
+      model: 'gpt-4',
+      endpoint: 'https://api.openai.com/v1/chat/completions',
+      apiKey: process.env.OPENAI_API_KEY!,
+      // ... other provider settings
+    }
+  ],
+  evolution: {
+    enabled: true,
+    interval: 60,
+    maxVariations: 5,
+    qualityThreshold: 0.7
+  },
+  monitoring: {
+    enableMetrics: true,
+    metricsInterval: 30,
+    retentionDays: 30
+  }
+};
+```
+
+## 🎯 Usage Examples
+
+### Basic Prompt Execution
+
+```typescript
+import { createAndInitializeOrchestrator } from './orchestrator';
+
 const orchestrator = await createAndInitializeOrchestrator();
 
-// Execute a prompt
+// Simple execution
 const response = await orchestrator.executePrompt(
   'api_design_advanced',
   {
     projectName: 'My API',
     language: 'TypeScript',
-    framework: 'Express.js',
-    requirements: 'RESTful API for user management'
+    framework: 'Express.js'
   }
 );
 
-console.log(response.finalOutput);
+console.log(`Quality: ${response.quality.overall}, Cost: $${response.totalCost}`);
 ```
 
-## 🎯 Usage Examples
+### Advanced Orchestration
 
-### 1. Simple Prompt Execution
 ```typescript
+// Task-classified execution with multimodal support
 const response = await orchestrator.executePrompt(
-  'code_generation_advanced',
+  'code_analysis',
   {
-    requirements: 'Create a React component for user authentication',
-    language: 'TypeScript',
-    framework: 'React',
-    constraints: 'Must use hooks and be accessible'
+    codeSnippet: 'function example() { return "hello"; }',
+    analysisType: 'security'
+  },
+  {
+    taskClass: 'code_generation',
+    multimodal: false,
+    strategy: 'ensemble',
+    feedbackEnabled: true,
+    evolutionEnabled: true
+  }
+);
+```
+
+### Prompt Sequences
+
+```typescript
+// Execute a sequence of related prompts
+const responses = await orchestrator.executePromptSequence(
+  ['problem_analysis', 'solution_generation', 'implementation_planning'],
+  {
+    problem: 'Optimize database queries',
+    context: 'E-commerce platform'
   },
   {
     strategy: 'adaptive',
-    useCache: true,
-    userId: 'user123'
+    continueOnError: false
   }
 );
 ```
 
-### 2. Prompt Sequence with Evolution
-```typescript
-const promptIds = [
-  'research_question_prompt',
-  'literature_review_prompt', 
-  'methodology_prompt',
-  'analysis_prompt'
-];
+### Feedback and Learning
 
-const responses = await orchestrator.executePromptSequence(
-  promptIds,
-  {
-    topic: 'AI Impact on Software Development',
-    scope: '2020-2024 research',
-    methodology: 'systematic review'
-  },
-  {
-    strategy: 'sequential',
-    continueOnError: true
-  }
+```typescript
+// Submit feedback for continuous improvement
+await orchestrator.submitFeedback({
+  promptId: 'api_design_advanced',
+  responseId: response.requestId,
+  score: 8.5,
+  category: 'quality',
+  feedback: 'Excellent structure and comprehensive design',
+  source: 'human'
+});
+```
+
+### Manual Evolution
+
+```typescript
+// Trigger prompt evolution
+const evolvedPromptId = await orchestrator.triggerManualEvolution(
+  'api_design_advanced',
+  'hybrid' // genetic, reinforcement, or hybrid
 );
 ```
 
-### 3. Prompt Evolution
-```typescript
-// Evolve a prompt to improve performance
-const evolvedPromptId = await orchestrator.evolvePrompt('api_design_advanced');
+## 🌐 API Endpoints
 
-// Use the evolved prompt
-const response = await orchestrator.executePrompt(
-  evolvedPromptId,
-  variables
-);
-```
+### Core Operations
+- `POST /api/execute` - Execute a single prompt
+- `POST /api/execute-sequence` - Execute prompt sequence
+- `POST /api/feedback` - Submit feedback
+- `POST /api/evolve/:promptId` - Trigger prompt evolution
 
-### 4. Performance Analysis
-```typescript
-const analysis = await orchestrator.analyzePerformance();
+### Analytics & Monitoring
+- `GET /api/analytics` - Get advanced analytics
+- `GET /api/performance` - Get performance analysis
+- `GET /api/tasks/:taskClass` - Get task-specific metrics
+- `GET /api/coordination-patterns` - Get coordination patterns
 
-console.log(`Success Rate: ${analysis.global.successCount / analysis.global.requestCount * 100}%`);
-console.log(`Top Provider: ${analysis.providers[0].id}`);
-console.log(`Recommendations: ${analysis.recommendations.join(', ')}`);
-```
+### Configuration
+- `GET /api/config/export` - Export configuration
+- `POST /api/config/import` - Import configuration
 
-## 🎮 Command Line Interface
+### System
+- `GET /health` - Health check
+- `GET /ws-info` - WebSocket information
 
-The system includes a comprehensive CLI for testing and management:
+## 🔌 WebSocket Events
 
-```bash
-# Run full demonstration
-npx ts-node mechanisms/llmOrchestration/cli.ts demo
+Connect to `ws://localhost:3000/ws` for real-time updates:
 
-# Execute a single prompt
-npx ts-node mechanisms/llmOrchestration/cli.ts execute \
-  --prompt=api_design_advanced \
-  --variables='{"projectName":"MyAPI","language":"TypeScript"}' \
-  --strategy=ensemble \
-  --output=response.json
+```javascript
+const ws = new WebSocket('ws://localhost:3000/ws');
 
-# Execute prompt sequence
-npx ts-node mechanisms/llmOrchestration/cli.ts sequence \
-  --prompt=prompt1,prompt2,prompt3 \
-  --strategy=sequential \
-  --verbose
+// Subscribe to events
+ws.send(JSON.stringify({
+  type: 'subscribe',
+  events: ['response_generated', 'feedback_received', 'prompt_evolved']
+}));
 
-# Evolve a prompt
-npx ts-node mechanisms/llmOrchestration/cli.ts evolve \
-  --prompt=api_design_advanced
-
-# Analyze performance
-npx ts-node mechanisms/llmOrchestration/cli.ts analyze
-
-# List resources
-npx ts-node mechanisms/llmOrchestration/cli.ts list prompts
-npx ts-node mechanisms/llmOrchestration/cli.ts list providers
-npx ts-node mechanisms/llmOrchestration/cli.ts list cache
-```
-
-## ⚙️ Configuration
-
-### Environment-Based Presets
-```typescript
-import { ConfigurationFactory } from './config';
-
-// Development configuration (fast iteration, verbose logging)
-const devConfig = ConfigurationFactory.createConfig('development');
-
-// Production configuration (optimized for reliability and cost)
-const prodConfig = ConfigurationFactory.createConfig('production');
-
-// Research configuration (maximum creativity and experimentation)
-const researchConfig = ConfigurationFactory.createConfig('research');
-```
-
-### Custom Configuration
-```typescript
-const customConfig = ConfigurationFactory.createConfig('production', {
-  evolution: {
-    enabled: true,
-    interval: 5, // Evolve every 5 iterations
-    maxVariations: 7
-  },
-  features: {
-    enableCaching: true,
-    enableAnalytics: true,
-    enableCostOptimization: true
-  },
-  storage: {
-    type: 'hybrid',
-    basePath: '/custom/path',
-    compression: true,
-    encryption: true
-  }
-});
-```
-
-## 🔧 Advanced Features
-
-### Circuit Breaker Pattern
-Automatically isolates failing providers to prevent cascade failures:
-```typescript
-// Circuit breaker automatically manages provider availability
-const response = await orchestrator.executePrompt(promptId, variables);
-// If a provider fails repeatedly, it's temporarily disabled
-```
-
-### Intelligent Caching
-Quality-based caching that stores only high-quality responses:
-```typescript
-// Responses with quality > 0.7 are automatically cached
-const response = await orchestrator.executePrompt(promptId, variables, {
-  useCache: true // Check cache first, store if high quality
-});
-```
-
-### Rate Limiting
-Per-user and global rate limiting with configurable windows:
-```typescript
-const response = await orchestrator.executePrompt(promptId, variables, {
-  userId: 'user123', // Rate limiting applied per user
-  bypassRateLimit: false // Respect rate limits
-});
-```
-
-### Quality Assessment
-Multi-dimensional quality scoring for response evaluation:
-```typescript
-const quality = response.quality;
-console.log(`Relevance: ${quality.relevance}`);
-console.log(`Coherence: ${quality.coherence}`);
-console.log(`Creativity: ${quality.creativity}`);
-console.log(`Overall: ${quality.overall}`);
-```
-
-## 📊 Orchestration Strategies
-
-### Sequential
-Execute prompts one after another, using previous outputs as context:
-```typescript
-strategy: 'sequential' // prompt1 → prompt2 → prompt3
-```
-
-### Parallel
-Execute all prompts simultaneously for speed:
-```typescript
-strategy: 'parallel' // prompt1 || prompt2 || prompt3
-```
-
-### Ensemble
-Execute with multiple providers and combine results:
-```typescript
-strategy: 'ensemble' // Best of multiple provider responses
-```
-
-### Fallback
-Try providers in order until one succeeds:
-```typescript
-strategy: 'fallback' // provider1 → provider2 → provider3
-```
-
-### Adaptive
-Dynamically select providers based on performance:
-```typescript
-strategy: 'adaptive' // Smart provider selection
-```
-
-### Competitive
-Get multiple responses and select the best:
-```typescript
-strategy: 'competitive' // Multiple responses, best wins
-```
-
-## 📁 Storage Organization
-
-The system automatically organizes responses in a structured format:
-
-```
-data/llm_orchestration/
-├── responses/
-│   ├── 2024-01-15T10-30-00_req_123/
-│   │   ├── response.json           # Main response data
-│   │   ├── prompt.md              # Prompt used
-│   │   ├── providers/
-│   │   │   ├── openai-gpt4/
-│   │   │   │   ├── output.txt     # Provider response
-│   │   │   │   └── metadata.json  # Performance metrics
-│   │   │   └── anthropic-claude/
-│   │   │       ├── output.txt
-│   │   │       └── metadata.json
-│   │   └── separator.txt          # Sequence separator
-│   └── ...
-├── prompts/
-│   ├── api_design_advanced.json   # Prompt definition
-│   ├── api_design_advanced.md     # Human-readable format
-│   └── ...
-└── analytics/
-    ├── performance_metrics.json
-    └── provider_rankings.json
-```
-
-## 🔄 Prompt Evolution Process
-
-The system includes an innovative prompt evolution mechanism:
-
-1. **Performance Monitoring**: Track prompt performance across multiple dimensions
-2. **Evolution Trigger**: Automatically evolve prompts based on iteration count or performance thresholds
-3. **Variation Generation**: Use meta-prompts to generate improved variations
-4. **Selection**: Choose the best variation based on weighted criteria
-5. **Integration**: Seamlessly integrate evolved prompts into the workflow
-
-### Evolution Meta-Prompt
-The system uses a special meta-prompt to evolve existing prompts:
-```
-"Give variations of this prompt, even better and practical with focus on 
-innovative creativity and ideas on improving to highest potential. 
-Think outside the box"
-```
-
-### Separator System
-Responses are automatically separated using distinctive markers:
-```
----###///---###///---###///
-```
-
-## 🚨 Error Handling
-
-### Comprehensive Error Types
-- `LLMOrchestrationError`: Base error class with context
-- `RetryableError`: Errors that can be retried
-- `NonRetryableError`: Permanent failures
-
-### Retry Logic
-- Exponential backoff with jitter
-- Configurable retry attempts and delays
-- Smart error classification
-
-### Circuit Breaker
-- Automatic failure detection
-- Temporary provider isolation
-- Gradual recovery testing
-
-## 📈 Performance Monitoring
-
-### Real-time Metrics
-- Request count and success rates
-- Average latency and cost per request
-- Quality scores and provider rankings
-- Cache hit rates and efficiency
-
-### Analytics Dashboard
-```typescript
-const analysis = await orchestrator.analyzePerformance();
-// Comprehensive performance insights and recommendations
-```
-
-### Optimization Recommendations
-The system provides intelligent optimization suggestions:
-- Provider selection optimization
-- Configuration tuning recommendations
-- Cost reduction strategies
-- Quality improvement suggestions
-
-## 🔒 Security Features
-
-### API Key Management
-- Secure storage and rotation
-- Environment-based configuration
-- Provider-specific authentication
-
-### Data Protection
-- Optional encryption for stored responses
-- Configurable data retention policies
-- Audit logging for compliance
-
-### Rate Limiting
-- Per-user and global limits
-- Configurable time windows
-- Graceful degradation
-
-## 🧪 Testing & Development
-
-### Running Examples
-```bash
-# Run all examples
-npx ts-node mechanisms/llmOrchestration/examples.ts
-
-# Run specific example
-const examples = new LLMOrchestrationExamples();
-await examples.runCodeGenerationExample();
-```
-
-### Development Mode
-Set `NODE_ENV=development` for:
-- Verbose logging
-- Relaxed rate limiting
-- Fast prompt evolution
-- Local file storage
-
-### Research Mode
-Set `LLM_RESEARCH_MODE=true` for:
-- Maximum creativity focus
-- Experimental features
-- Extended data retention
-- Advanced analytics
-
-## 🤝 Integration
-
-### Express.js Integration
-```typescript
-import express from 'express';
-import { createAndInitializeOrchestrator } from './mechanisms/llmOrchestration/orchestrator';
-
-const app = express();
-const orchestrator = await createAndInitializeOrchestrator();
-
-app.post('/api/llm/execute', async (req, res) => {
-  try {
-    const { promptId, variables, options } = req.body;
-    const response = await orchestrator.executePrompt(promptId, variables, options);
-    res.json(response);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-```
-
-### Serverless Integration
-```typescript
-// AWS Lambda handler
-export const handler = async (event: any) => {
-  const orchestrator = await createAndInitializeOrchestrator();
-  
-  try {
-    const response = await orchestrator.executePrompt(
-      event.promptId,
-      event.variables,
-      event.options
-    );
-    
-    return {
-      statusCode: 200,
-      body: JSON.stringify(response)
-    };
-  } finally {
-    await orchestrator.shutdown();
-  }
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Event:', data.event, data.data);
 };
 ```
 
-## 📚 API Reference
+## 🚀 Deployment
 
-### Main Classes
-- `AdvancedLLMOrchestrator`: Main orchestration class
-- `LLMOrchestrationEngine`: Core engine
-- `ConfigurationFactory`: Configuration management
-- `RetryManager`: Retry logic handler
-- `CircuitBreaker`: Circuit breaker implementation
-- `LRUCache`: Intelligent caching
-- `QualityAssessment`: Response quality evaluation
+### PM2 Deployment
 
-### Key Methods
-- `executePrompt()`: Execute single prompt
-- `executePromptSequence()`: Execute prompt sequence
-- `evolvePrompt()`: Evolve prompt for better performance
-- `analyzePerformance()`: Get performance analytics
-- `optimizeConfiguration()`: Get optimization recommendations
+```bash
+# Start with PM2
+npm run pm2:start
 
-## 🔮 Future Enhancements
+# Monitor
+npm run pm2:monit
 
-### Planned Features
-- **Multi-modal Support**: Image, audio, and video processing
-- **Workflow Templates**: Pre-built workflows for common tasks
-- **A/B Testing**: Automated prompt testing and optimization
-- **Real-time Collaboration**: Multi-user prompt development
-- **Advanced Analytics**: ML-powered performance prediction
-- **Custom Providers**: Easy integration of new LLM providers
+# View logs
+npm run pm2:logs
 
-### Extensibility
-The system is designed for easy extension:
-- Plugin architecture for custom strategies
-- Configurable quality assessment metrics
-- Custom storage backends
-- Provider-specific optimizations
+# Restart
+npm run pm2:restart
+```
 
-## 📄 License
+### Docker Deployment
 
-This project is part of the ServerLezz Identities system and follows the same licensing terms.
+```bash
+# Build and run
+docker build -t advanced-llm-orchestrator .
+docker run -p 3000:3000 advanced-llm-orchestrator
+
+# Or use Docker Compose
+docker-compose up -d
+```
+
+### Production Stack
+
+The complete production stack includes:
+- **Main Application**: LLM Orchestrator with clustering
+- **Background Worker**: Handles evolution and analytics
+- **Redis**: Caching and session storage
+- **PostgreSQL**: Persistent data storage
+- **Nginx**: Reverse proxy and load balancing
+- **Prometheus**: Metrics collection
+- **Grafana**: Visualization and dashboards
+
+```bash
+# Deploy full stack
+docker-compose up -d
+
+# Scale the main application
+docker-compose up -d --scale llm-orchestrator=3
+```
+
+## 📊 Monitoring & Analytics
+
+### Built-in Analytics
+
+```typescript
+// Get comprehensive analytics
+const analytics = await orchestrator.getAdvancedAnalytics();
+
+console.log(`Task Classifications: ${analytics.taskClassifications.length}`);
+console.log(`Cache Hit Rate: ${analytics.cacheEfficiency.hitRate * 100}%`);
+console.log(`Total Evolutions: ${analytics.evolutionMetrics.totalEvolutions}`);
+```
+
+### Performance Monitoring
+
+```typescript
+// Analyze performance
+const performance = await orchestrator.analyzePerformance();
+
+console.log(`Success Rate: ${performance.global.successCount / performance.global.requestCount * 100}%`);
+console.log(`Top Provider: ${performance.providers[0]?.id}`);
+```
+
+### Event Monitoring
+
+```typescript
+// Listen to system events
+orchestrator.on('response_generated', (data) => {
+  console.log(`Response generated for ${data.promptId}`);
+});
+
+orchestrator.on('provider_performance_warning', (warning) => {
+  console.warn(`Provider ${warning.providerId} performance degraded`);
+});
+```
+
+## 🧬 Prompt Evolution
+
+The system includes advanced prompt evolution capabilities:
+
+### Evolution Strategies
+- **Genetic Algorithm**: Mutation and crossover of prompt variations
+- **Reinforcement Learning**: Reward-based optimization
+- **Hybrid Approach**: Combines multiple strategies
+
+### Automatic Evolution
+- Background evolution based on performance metrics
+- Feedback-driven improvements
+- A/B testing of variations
+
+### Manual Evolution
+```typescript
+// Trigger evolution with specific strategy
+const evolvedId = await orchestrator.triggerManualEvolution(
+  'original_prompt_id',
+  'genetic' // or 'reinforcement', 'hybrid'
+);
+```
+
+## 🎛️ Task Classification
+
+Automatic task classification optimizes provider selection:
+
+### Supported Task Classes
+- `code_generation` - Programming and development tasks
+- `creative_writing` - Creative content generation
+- `analytical_reasoning` - Problem-solving and analysis
+- `multimodal_processing` - Cross-modal tasks
+- `general` - General-purpose tasks
+
+### Custom Classifications
+```typescript
+// Add custom task classification
+orchestrator.addTaskClassification({
+  name: 'legal_analysis',
+  description: 'Legal document analysis and generation',
+  optimalProviders: ['openai-gpt4', 'anthropic-claude'],
+  characteristics: ['formal_language', 'accuracy_critical'],
+  performanceMetrics: new Map()
+});
+```
+
+## 🔄 Coordination Patterns
+
+Advanced coordination patterns for complex workflows:
+
+```typescript
+// Add custom coordination pattern
+orchestrator.addCoordinationPattern({
+  name: 'quality_assurance',
+  description: 'High-quality output with validation',
+  strategy: 'ensemble',
+  priority: 8,
+  conditions: (context) => context.priority > 7,
+  parameters: {
+    minProviders: 3,
+    consensusThreshold: 0.8
+  }
+});
+```
+
+## 🛡️ Security & Best Practices
+
+### API Security
+- Rate limiting with configurable thresholds
+- CORS protection
+- Helmet.js security headers
+- Input validation and sanitization
+
+### Data Protection
+- Encrypted storage for sensitive data
+- Secure API key management
+- Audit trails for all operations
+- GDPR compliance features
+
+### Production Checklist
+- [ ] Set strong API keys
+- [ ] Configure rate limits
+- [ ] Enable HTTPS
+- [ ] Set up monitoring
+- [ ] Configure backups
+- [ ] Test failover scenarios
+- [ ] Review security settings
+
+## 🔧 Development
+
+### Running Tests
+```bash
+npm test
+npm run test:watch
+```
+
+### Linting
+```bash
+npm run lint
+npm run lint:fix
+```
+
+### Development Mode
+```bash
+npm run dev
+npm run dev:worker
+```
+
+### Demo
+```bash
+npm run demo
+```
+
+## 📈 Performance Optimization
+
+### Caching Strategy
+- Intelligent LRU cache with predictive algorithms
+- Semantic similarity matching
+- Dynamic TTL based on quality and cost
+- Cache warming and preloading
+
+### Provider Optimization
+- Performance-based provider ranking
+- Task-specific provider selection
+- Circuit breaker pattern for reliability
+- Automatic failover and recovery
+
+### Resource Management
+- Memory usage monitoring
+- Graceful degradation under load
+- Background task optimization
+- Connection pooling
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see the main project's contributing guidelines.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-## 📞 Support
+## 📄 License
 
-For support and questions, please refer to the main project's support channels.
+MIT License - see LICENSE file for details.
+
+## 🆘 Support
+
+- GitHub Issues: Report bugs and request features
+- Documentation: Comprehensive API documentation
+- Examples: Sample implementations and use cases
 
 ---
 
-**Built with ❤️ for the future of AI orchestration**
+**Ready for Production!** 🚀
+
+This Advanced LLM Orchestration System is designed for enterprise-scale deployments with comprehensive monitoring, intelligent optimization, and robust error handling. Deploy with confidence using PM2, Docker, or your preferred orchestration platform.
