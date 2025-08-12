@@ -30,6 +30,9 @@ import {
 } from './utils';
 
 import { LLMOrchestrationExamples } from './examples';
+import { FileBasedResponseStore, IResponseStore, createResponseStore } from './persistence/ResponseStore';
+import { PromptEvolutionManager, IPromptEvolutionManager, createPromptEvolutionManager } from './orchestrator/PromptEvolutionManager';
+import { META_PROMPTS, getAllMetaPrompts } from './prompts/MetaPrompts';
 import axios from 'axios';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -125,6 +128,10 @@ export class AdvancedLLMOrchestrator extends EventEmitter {
   private coordinationPatterns: CoordinationPattern[] = [];
   private multimodalCapabilities: Map<string, MultimodalCapability[]> = new Map();
   
+  // New modular components
+  private responseStore: IResponseStore;
+  private evolutionManager: IPromptEvolutionManager;
+  
   // Learning and adaptation
   private learningRate: number = 0.01;
   private adaptationThreshold: number = 0.1;
@@ -172,6 +179,15 @@ export class AdvancedLLMOrchestrator extends EventEmitter {
     });
     
     this.performanceMonitor = new PerformanceMonitor();
+    
+    // Initialize modular components
+    this.responseStore = createResponseStore('file', {
+      basePath: path.join(this.config.storage.basePath, 'responses'),
+      maxAgeHours: 24
+    });
+    
+    // Evolution manager will be initialized after evolution strategies are set up
+    this.evolutionManager = null!; // Will be initialized in initializeAdvancedCapabilities
   }
 
   // ==================== INITIALIZATION ====================
@@ -236,6 +252,21 @@ export class AdvancedLLMOrchestrator extends EventEmitter {
     
     // Load historical data if available
     await this.loadHistoricalData();
+    
+    // Initialize evolution manager with strategies
+    this.evolutionManager = createPromptEvolutionManager(
+      this.evolutionStrategies,
+      this.qualityThreshold,
+      (promptId: string, variables: Record<string, any>, options?: any) => 
+        this.executePrompt(promptId, variables, options)
+    );
+    
+    // Add meta-prompts to the engine
+    const metaPrompts = getAllMetaPrompts();
+    for (const metaPrompt of metaPrompts) {
+      this.engine.addPrompt(metaPrompt);
+    }
+    console.log(`🔧 Added ${metaPrompts.length} meta-prompts for evolution`);
     
     console.log('✅ Advanced capabilities initialized');
   }

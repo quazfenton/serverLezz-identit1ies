@@ -618,6 +618,146 @@ export function detectEnvironment(): "development" | "production" | "research" {
   return "development";
 }
 
+// ==================== META-PROMPT INTEGRATION ====================
+
+export interface EnhancedLLMOrchestrationConfig extends LLMOrchestrationConfig {
+  metaPrompts?: {
+    system: any[];
+    developer: any[];
+    user: any[];
+  };
+  configLoader?: any; // Will be set at runtime
+}
+
+/**
+ * Enhanced Configuration Factory with meta-prompts support
+ */
+export class EnhancedConfigurationFactory extends ConfigurationFactory {
+  /**
+   * Create configuration with meta-prompts integration
+   */
+  public static async createConfigWithMetaPrompts(
+    environment: "development" | "production" | "research",
+    customizations?: Partial<LLMOrchestrationConfig>,
+    context?: {
+      userType?: string;
+      context?: string;
+      cliArgs?: Record<string, any>;
+      envVars?: Record<string, any>;
+    }
+  ): Promise<EnhancedLLMOrchestrationConfig> {
+    // Create base config
+    let baseConfig = this.createConfig(environment, customizations);
+    
+    try {
+      // Dynamically import ConfigLoader to avoid circular dependencies
+      const { createConfigLoader } = await import('./ConfigLoader');
+      
+      // Load meta-prompts and merge configurations
+      const configLoader = createConfigLoader();
+      const loadedConfig = await configLoader.loadMergedConfig(
+        customizations,
+        context?.cliArgs,
+        context?.envVars
+      );
+      
+      // Create enhanced config
+      const enhancedConfig: EnhancedLLMOrchestrationConfig = {
+        ...loadedConfig.orchestration,
+        metaPrompts: {
+          system: loadedConfig.activeMetaPrompts.filter(p => p.id.startsWith('system_')),
+          developer: loadedConfig.activeMetaPrompts.filter(p => p.id.startsWith('dev_')),
+          user: loadedConfig.activeMetaPrompts.filter(p => p.id.startsWith('user_'))
+        },
+        configLoader
+      };
+      
+      return enhancedConfig;
+      
+    } catch (error) {
+      console.warn('Meta-prompts integration failed, falling back to base config:', error);
+      return baseConfig as EnhancedLLMOrchestrationConfig;
+    }
+  }
+  
+  /**
+   * Get combined meta-prompt for context
+   */
+  public static async getCombinedMetaPrompt(
+    environment: string,
+    context: string,
+    userType?: string
+  ): Promise<string> {
+    try {
+      const { createConfigLoader } = await import('./ConfigLoader');
+      const configLoader = createConfigLoader();
+      
+      const metaPrompts = await configLoader.getMetaPromptsForContext(context, userType);
+      return configLoader.combineMetaPrompts(metaPrompts, 'hierarchical_merge');
+      
+    } catch (error) {
+      console.warn('Failed to get combined meta-prompt:', error);
+      return '';
+    }
+  }
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Create configuration with automatic meta-prompts integration
+ */
+export async function createEnhancedConfig(
+  environment?: "development" | "production" | "research",
+  context?: {
+    userType?: string;
+    context?: string;
+    cliArgs?: Record<string, any>;
+    envVars?: Record<string, any>;
+  }
+): Promise<EnhancedLLMOrchestrationConfig> {
+  const env = environment || detectEnvironment();
+  return EnhancedConfigurationFactory.createConfigWithMetaPrompts(env, undefined, context);
+}
+
+/**
+ * Load configuration from environment and CLI arguments (for CLI tools)
+ */
+export async function loadConfigFromEnvironment(): Promise<EnhancedLLMOrchestrationConfig> {
+  const cliArgs = parseCommandLineArgs();
+  const envVars = process.env;
+  
+  return createEnhancedConfig(undefined, {
+    userType: cliArgs.userType,
+    context: cliArgs.context,
+    cliArgs,
+    envVars
+  });
+}
+
+/**
+ * Simple CLI argument parser (can be enhanced as needed)
+ */
+function parseCommandLineArgs(): Record<string, any> {
+  const args: Record<string, any> = {};
+  
+  for (let i = 0; i < process.argv.length; i++) {
+    const arg = process.argv[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const value = process.argv[i + 1];
+      if (value && !value.startsWith('--')) {
+        args[key] = value;
+        i++; // Skip next argument as it's the value
+      } else {
+        args[key] = true; // Boolean flag
+      }
+    }
+  }
+  
+  return args;
+}
+
 // ==================== EXPORTS ====================
 
 export default {
@@ -627,5 +767,8 @@ export default {
   PROVIDER_CONFIGS,
   PROMPT_LIBRARY,
   ConfigurationFactory,
-  detectEnvironment
+  EnhancedConfigurationFactory,
+  detectEnvironment,
+  createEnhancedConfig,
+  loadConfigFromEnvironment
 };

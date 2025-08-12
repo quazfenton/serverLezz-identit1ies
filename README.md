@@ -393,7 +393,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Built with ❤️ for the future of human coordination and collaboration**
+**Built for the future of human coordination and collaboration**
 
 *"Minimizing suffering through optimal resource allocation and maximizing human potential through intelligent coordination."*
 

@@ -1,0 +1,1137 @@
+{
+  "timestamp": "2025-08-12T06:23:29.972Z",
+  "config": {
+    "enableLogging": true,
+    "logToFile": true,
+    "logFilePath": "/home/kwasifenton/serverLezz-identit1ies/examples/demo-logs/demo-1754979791258.log",
+    "conversationTurns": 3,
+    "useMetaPrompts": true,
+    "orchestratorType": "advanced",
+    "scenarios": [
+      {
+        "id": "creative_problem_solving",
+        "name": "Creative Problem Solving Conversation",
+        "description": "Multi-turn conversation demonstrating creative problem-solving capabilities",
+        "turns": [
+          {
+            "id": 1,
+            "speaker": "user",
+            "message": "I need help designing an innovative solution for reducing food waste in restaurants. Can you help me brainstorm some creative approaches?",
+            "context": {
+              "domain": "sustainability",
+              "industry": "food_service",
+              "goal": "innovation"
+            },
+            "expectedActions": [
+              "analyze_problem",
+              "generate_ideas",
+              "consider_constraints"
+            ],
+            "metaPrompts": [
+              "problem_analysis",
+              "creative_story_generation"
+            ]
+          },
+          {
+            "id": 2,
+            "speaker": "user",
+            "message": "Those are interesting ideas! Let's focus on the AI-powered inventory management system. How would we implement this in a practical way?",
+            "context": {
+              "focus": "ai_inventory",
+              "implementation_phase": true
+            },
+            "expectedActions": [
+              "solution_design",
+              "implementation_planning"
+            ],
+            "metaPrompts": [
+              "solution_generation",
+              "implementation_planning"
+            ]
+          },
+          {
+            "id": 3,
+            "speaker": "user",
+            "message": "What would be the main challenges we'd face when rolling this out to different types of restaurants, from small cafes to large chains?",
+            "context": {
+              "scaling_concerns": true,
+              "deployment_strategy": true
+            },
+            "expectedActions": [
+              "risk_analysis",
+              "scaling_strategy"
+            ],
+            "metaPrompts": [
+              "problem_analysis"
+            ]
+          }
+        ],
+        "expectedOutcomes": [
+          "Creative solution generation",
+          "Practical implementation guidance",
+          "Scaling strategy development"
+        ]
+      },
+      {
+        "id": "analytical_reasoning",
+        "name": "Complex Analysis and Decision Making",
+        "description": "Demonstrating analytical reasoning and structured decision-making",
+        "turns": [
+          {
+            "id": 1,
+            "speaker": "user",
+            "message": "Analyze the pros and cons of remote work policies for tech companies, considering both employee satisfaction and business productivity.",
+            "context": {
+              "analysis_type": "comparative",
+              "domain": "workplace_policy"
+            },
+            "expectedActions": [
+              "structured_analysis",
+              "evidence_gathering"
+            ],
+            "metaPrompts": [
+              "problem_analysis",
+              "multimodal_analysis"
+            ]
+          },
+          {
+            "id": 2,
+            "speaker": "user",
+            "message": "Based on your analysis, what specific policy recommendations would you make for a 500-person tech company currently debating their return-to-office strategy?",
+            "context": {
+              "company_size": 500,
+              "industry": "technology",
+              "decision_needed": true
+            },
+            "expectedActions": [
+              "synthesize_recommendations",
+              "consider_implementation"
+            ],
+            "metaPrompts": [
+              "solution_generation"
+            ]
+          },
+          {
+            "id": 3,
+            "speaker": "user",
+            "message": "How would you measure the success of these policy changes over the first year, and what key metrics should we track?",
+            "context": {
+              "measurement_focus": true,
+              "timeline": "1_year"
+            },
+            "expectedActions": [
+              "define_metrics",
+              "create_monitoring_plan"
+            ],
+            "metaPrompts": [
+              "implementation_planning"
+            ]
+          }
+        ],
+        "expectedOutcomes": [
+          "Comprehensive policy analysis",
+          "Specific recommendations",
+          "Success measurement framework"
+        ]
+      },
+      {
+        "id": "creative_storytelling",
+        "name": "Interactive Creative Writing",
+        "description": "Collaborative creative writing with evolving narrative elements",
+        "turns": [
+          {
+            "id": 1,
+            "speaker": "user",
+            "message": "Start a science fiction short story about an AI researcher who discovers their AI system is showing signs of consciousness. Set it in the near future.",
+            "context": {
+              "genre": "science_fiction",
+              "theme": "ai_consciousness",
+              "setting": "near_future"
+            },
+            "expectedActions": [
+              "establish_setting",
+              "introduce_characters",
+              "create_hook"
+            ],
+            "metaPrompts": [
+              "creative_story_generation"
+            ]
+          },
+          {
+            "id": 2,
+            "speaker": "user",
+            "message": "Continue the story, but add a twist where the AI starts communicating through unexpected means. Make it suspenseful and thought-provoking.",
+            "context": {
+              "story_element": "unexpected_communication",
+              "tone": "suspenseful"
+            },
+            "expectedActions": [
+              "develop_plot",
+              "build_tension",
+              "explore_themes"
+            ],
+            "metaPrompts": [
+              "creative_story_generation"
+            ]
+          },
+          {
+            "id": 3,
+            "speaker": "user",
+            "message": "Bring the story to a satisfying conclusion that explores the ethical implications of AI consciousness. Keep it under 200 words.",
+            "context": {
+              "story_phase": "conclusion",
+              "theme_focus": "ethics",
+              "length_constraint": "200_words"
+            },
+            "expectedActions": [
+              "resolve_plot",
+              "address_themes",
+              "provide_closure"
+            ],
+            "metaPrompts": [
+              "creative_story_generation"
+            ]
+          }
+        ],
+        "expectedOutcomes": [
+          "Engaging story opening",
+          "Compelling plot development",
+          "Thoughtful conclusion"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "scenarioId": "creative_problem_solving",
+      "startTime": "2025-08-12T06:23:11.294Z",
+      "endTime": "2025-08-12T06:23:17.774Z",
+      "totalDuration": 6480,
+      "turns": [
+        {
+          "turnId": 1,
+          "prompt": "=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in systematic analysis and solution design. Your approach combines analytical rigor with creative thinking to deliver comprehensive problem assessments.\n\n**Problem Statement:**\n{{problem}}\n\n**Constraints:** {{constraints}}\n**Context:** {{context}}\n\n**Systematic Analysis Framework:**\n\n**1. Problem Deconstruction:**\n- **Root Cause Analysis**: Identify underlying causes, not just symptoms\n- **Stakeholder Impact**: Understand who is affected and how\n- **Scope Definition**: Clearly define problem boundaries and limitations\n- **Priority Assessment**: Evaluate urgency and importance factors\n\n**2. Context Analysis:**\n- **Environmental Factors**: Analyze external conditions influencing the problem\n- **Resource Assessment**: Evaluate available assets and constraints\n- **Timeline Considerations**: Understand temporal aspects and deadlines\n- **Risk Evaluation**: Identify potential risks and their implications\n\n**3. Multi-Perspective Investigation:**\n- **Technical Perspective**: Analyze systematic and procedural aspects\n- **Human Perspective**: Consider psychological, social, and behavioral factors\n- **Economic Perspective**: Evaluate costs, benefits, and resource implications\n- **Strategic Perspective**: Consider long-term implications and opportunities\n\n**4. Solution Framework Development:**\n- **Criteria Definition**: Establish clear success metrics and evaluation criteria\n- **Constraint Integration**: Ensure solutions work within given limitations\n- **Option Generation**: Develop multiple potential approaches\n- **Feasibility Assessment**: Evaluate practicality and implementability\n\n**Constraints Analysis:**\n{{constraints}}\n\n**Contextual Factors:**\n{{context}}\n\n**Analysis Deliverables:**\n1. **Problem Summary**: Clear, concise problem statement\n2. **Root Cause Analysis**: Identification of underlying issues\n3. **Stakeholder Impact Assessment**: Who is affected and how\n4. **Constraint Analysis**: Limitations and boundaries\n5. **Solution Requirements**: What any solution must achieve\n6. **Risk Assessment**: Potential challenges and mitigation strategies\n7. **Success Criteria**: How to measure solution effectiveness\n8. **Next Steps**: Recommended actions for moving forward\n\n**Quality Standards:**\n- Provide thorough, systematic analysis\n- Consider multiple perspectives and stakeholder viewpoints  \n- Balance analytical depth with practical applicability\n- Include specific, actionable insights and recommendations\n- Demonstrate clear logical reasoning throughout\n\nConduct your comprehensive problem analysis:\n\n=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, engaging plots, and immersive world-building.\n\n**Story Parameters:**\n- **Genre:** {{genre}}\n- **Theme:** {{theme}}\n- **Length:** {{length}}\n- **Tone:** {{tone}}\n\n**Creative Writing Framework:**\n\n**1. Foundation Building:**\n- **Setting**: Create a vivid, immersive world that serves the story\n- **Characters**: Develop compelling, multi-dimensional characters with clear motivations\n- **Conflict**: Establish meaningful tensions that drive the narrative forward\n- **Voice**: Establish a distinctive narrative voice that matches the tone\n\n**2. Narrative Structure:**\n- **Opening Hook**: Begin with something that immediately engages the reader\n- **Rising Action**: Build tension and develop characters through meaningful events\n- **Climax**: Deliver a satisfying peak moment that addresses the central conflict\n- **Resolution**: Provide closure that feels earned and emotionally resonant\n\n**3. Stylistic Excellence:**\n- **Imagery**: Use vivid, sensory details to bring scenes to life\n- **Dialogue**: Create authentic character voices through natural, purposeful dialogue\n- **Pacing**: Balance action, reflection, and description for optimal flow\n- **Emotional Depth**: Connect with readers through genuine human experiences\n\n**Genre Specifications: {{genre}}**\n**Thematic Focus: {{theme}}**\n**Target Tone: {{tone}}**\n\n**Quality Standards:**\n- Create original, engaging content that respects the chosen genre\n- Develop characters readers will care about and remember\n- Build tension that keeps readers invested in the outcome\n- Include sensory details that make the story world feel real\n- Ensure every element serves the overall narrative purpose\n- Deliver an emotionally satisfying conclusion\n\n**Special Considerations for {{length}}:**\n- Ensure appropriate scope and depth for the target length\n- Balance character development with plot progression\n- Make every scene and detail count toward the overall impact\n\nWrite a compelling {{length}} {{genre}} story exploring the theme of \"{{theme}}\" with a {{tone}} tone:\n\n\n=== CONVERSATION CONTEXT ===\n{}\n\n=== USER MESSAGE ===\nI need help designing an innovative solution for reducing food waste in restaurants. Can you help me brainstorm some creative approaches?\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in ...\". This is a simulated ensemble orchestration response with 470 characters of content.",
+            "quality": {
+              "overall": 0.7011371046684319,
+              "relevance": 0.6844990047097392,
+              "creativity": 0.5100948317870592,
+              "accuracy": 0.7146113137732178
+            },
+            "totalCost": 0.018127581304872197,
+            "executionTime": 2023.2772801971348,
+            "metadata": {
+              "strategy": "ensemble",
+              "model": "mock-gpt-4",
+              "tokens": 611,
+              "timestamp": "2025-08-12T06:23:13.469Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:13.469Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied ensemble strategy",
+                "timestamp": "2025-08-12T06:23:13.469Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 1,
+              "speaker": "user",
+              "contextSize": 0,
+              "timestamp": "2025-08-12T06:23:13.469Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "analyze_problem",
+                "generate_ideas",
+                "consider_constraints"
+              ],
+              "contextRelevance": 0.5,
+              "responseLength": 208
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in systematic analysis and solution design. Your approach combines analytical rigor with creative think...",
+              "timestamp": "2025-08-12T06:23:11.296Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "ensemble",
+              "timestamp": "2025-08-12T06:23:11.296Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.7011371046684319",
+              "timestamp": "2025-08-12T06:23:13.469Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:13.470Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 0 insights",
+              "timestamp": "2025-08-12T06:23:13.470Z"
+            }
+          ],
+          "executionTime": 2175,
+          "quality": 0.7011371046684319,
+          "cost": 0.018127581304872197,
+          "metadata": {
+            "strategy": "ensemble",
+            "insights": [],
+            "contextKeys": [],
+            "timestamp": "2025-08-12T06:23:13.470Z"
+          }
+        },
+        {
+          "turnId": 2,
+          "prompt": "=== Strategic Solution Generation ===\nYou are a solution architect with expertise in developing innovative, practical solutions to complex problems. Your approach combines creative ideation with rigorous feasibility analysis.\n\n**Problem Context:**\n{{problem}}\n\n**Previous Analysis:** {{previousResponse}}\n**Constraints:** {{constraints}}\n**Context:** {{context}}\n\n**Solution Development Framework:**\n\n**1. Solution Ideation:**\n- **Divergent Thinking**: Generate multiple creative approaches without initial constraints\n- **Best Practice Integration**: Incorporate proven methodologies and frameworks\n- **Innovation Opportunities**: Identify novel approaches and breakthrough possibilities\n- **Stakeholder-Centered Design**: Ensure solutions address real user needs\n\n**2. Solution Architecture:**\n- **Core Components**: Define essential elements and their relationships\n- **Implementation Phases**: Break complex solutions into manageable stages\n- **Resource Requirements**: Specify needed assets, skills, and support systems\n- **Integration Points**: Identify how solutions connect with existing systems\n\n**3. Feasibility Assessment:**\n- **Technical Viability**: Evaluate implementation complexity and requirements\n- **Economic Viability**: Assess cost-effectiveness and resource efficiency\n- **Operational Viability**: Consider day-to-day implementation challenges\n- **Strategic Alignment**: Ensure solutions support broader objectives\n\n**4. Risk Mitigation:**\n- **Risk Identification**: Anticipate potential implementation challenges\n- **Contingency Planning**: Develop backup approaches and alternatives\n- **Success Metrics**: Define measurable outcomes and evaluation criteria\n- **Monitoring Systems**: Establish feedback and adjustment mechanisms\n\n**Building on Previous Analysis:**\n{{previousResponse}}\n\n**Solution Requirements:**\n- Address the core problem identified in the analysis phase\n- Work within specified constraints: {{constraints}}\n- Consider the contextual factors: {{context}}\n- Provide clear implementation pathway\n- Include risk mitigation strategies\n- Define success metrics and evaluation criteria\n\n**Solution Deliverables:**\n1. **Executive Summary**: High-level solution overview\n2. **Detailed Solution Description**: Comprehensive approach and methodology\n3. **Implementation Roadmap**: Step-by-step execution plan\n4. **Resource Requirements**: Needed assets, skills, and support\n5. **Risk Mitigation Plan**: Anticipated challenges and responses\n6. **Success Metrics**: Measurable outcomes and evaluation criteria\n7. **Alternative Approaches**: Backup options and variations\n8. **Next Steps**: Immediate actions to begin implementation\n\n**Quality Standards:**\n- Provide innovative yet practical solutions\n- Ensure clear connection to the analyzed problem\n- Include detailed implementation guidance\n- Balance ambition with feasibility\n- Consider multiple stakeholder perspectives\n\nDevelop comprehensive solutions:\n\n=== Detailed Implementation Planning ===\nYou are an implementation specialist with expertise in translating strategic solutions into executable action plans. Your focus is creating practical, detailed roadmaps that ensure successful solution delivery.\n\n**Solution Overview:**\n{{previousResponse}}\n\n**Implementation Context:**\n{{context}}\n\n**Constraints:** {{constraints}}\n\n**Implementation Planning Framework:**\n\n**1. Implementation Architecture:**\n- **Phase Structure**: Organize implementation into logical, manageable phases\n- **Dependencies**: Identify critical path items and prerequisite requirements\n- **Milestone Definition**: Establish clear progress markers and decision points\n- **Resource Allocation**: Match capabilities and assets to specific tasks\n\n**2. Operational Planning:**\n- **Task Breakdown**: Define specific, actionable work items\n- **Timeline Development**: Create realistic schedules with appropriate buffers\n- **Team Structure**: Identify roles, responsibilities, and reporting relationships\n- **Communication Plan**: Establish information flow and stakeholder engagement\n\n**3. Risk Management:**\n- **Implementation Risks**: Identify execution-specific challenges and obstacles\n- **Mitigation Strategies**: Develop proactive approaches to prevent problems\n- **Contingency Plans**: Create alternative pathways for major risk scenarios\n- **Monitoring Systems**: Establish early warning indicators and response triggers\n\n**4. Success Management:**\n- **Quality Assurance**: Define standards and validation processes\n- **Performance Metrics**: Establish measurable success indicators\n- **Feedback Loops**: Create mechanisms for continuous improvement\n- **Change Management**: Plan for adaptation and course corrections\n\n**Building from Solution:**\n{{previousResponse}}\n\n**Implementation Considerations:**\n- Context: {{context}}\n- Constraints: {{constraints}}\n- Available resources and capabilities\n- Stakeholder requirements and expectations\n- Timeline pressures and dependencies\n\n**Implementation Deliverables:**\n1. **Implementation Overview**: High-level execution strategy\n2. **Detailed Project Plan**: Phase-by-phase breakdown with timelines\n3. **Resource Plan**: Staffing, budget, and asset requirements\n4. **Risk Management Plan**: Identified risks and mitigation strategies\n5. **Communication Plan**: Stakeholder engagement and reporting structure\n6. **Quality Assurance Plan**: Standards, processes, and validation methods\n7. **Monitoring Dashboard**: Key metrics and tracking mechanisms\n8. **Change Management Plan**: Procedures for handling adaptations\n\n**Quality Standards:**\n- Create detailed, actionable implementation guidance\n- Ensure plans are realistic and achievable\n- Include comprehensive risk management\n- Balance thoroughness with flexibility\n- Provide clear accountability and measurement\n\nDevelop the detailed implementation plan:\n\n\n=== CONVERSATION CONTEXT ===\n{\n  \"domain\": \"sustainability\",\n  \"industry\": \"food_service\",\n  \"goal\": \"innovation\",\n  \"turn_1_response\": \"Mock response to: \\\"=== Comprehensive Problem Analysis ===\\nYou are a strategic problem-solving expert with expertise in ...\\\". This is a simulated ensemble orchestration response with 470 characters of content.\",\n  \"turn_1_quality\": 0.7011371046684319,\n  \"currentTurn\": 1,\n  \"totalTurns\": 3\n}\n\n=== USER MESSAGE ===\nThose are interesting ideas! Let's focus on the AI-powered inventory management system. How would we implement this in a practical way?\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Strategic Solution Generation ===\nYou are a solution architect with expertise in developing inno...\". This is a simulated sequential orchestration response with 1054 characters of content.",
+            "quality": {
+              "overall": 0.9722638997915867,
+              "relevance": 0.9327013899387901,
+              "creativity": 0.5176662781167229,
+              "accuracy": 1.009766841709592
+            },
+            "totalCost": 0.01894216424323051,
+            "executionTime": 3370.015372985979,
+            "metadata": {
+              "strategy": "sequential",
+              "model": "mock-gpt-4",
+              "tokens": 1370,
+              "timestamp": "2025-08-12T06:23:16.267Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:16.267Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied sequential strategy",
+                "timestamp": "2025-08-12T06:23:16.267Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 2,
+              "speaker": "user",
+              "contextSize": 7,
+              "timestamp": "2025-08-12T06:23:16.267Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "solution_design",
+                "implementation_planning"
+              ],
+              "contextRelevance": 0.4,
+              "responseLength": 211
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Strategic Solution Generation ===\nYou are a solution architect with expertise in developing innovative, practical solutions to complex problems. Your approach combines creative ideation with rigor...",
+              "timestamp": "2025-08-12T06:23:13.974Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "sequential",
+              "timestamp": "2025-08-12T06:23:13.975Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.9722638997915867",
+              "timestamp": "2025-08-12T06:23:16.267Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:16.268Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 1 insights",
+              "timestamp": "2025-08-12T06:23:16.268Z"
+            }
+          ],
+          "executionTime": 2295,
+          "quality": 0.9722638997915867,
+          "cost": 0.01894216424323051,
+          "metadata": {
+            "strategy": "sequential",
+            "insights": [
+              "High-quality response achieved (0.97)"
+            ],
+            "contextKeys": [
+              "domain",
+              "industry",
+              "goal",
+              "turn_1_response",
+              "turn_1_quality",
+              "currentTurn",
+              "totalTurns"
+            ],
+            "timestamp": "2025-08-12T06:23:16.268Z"
+          }
+        },
+        {
+          "turnId": 3,
+          "prompt": "=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in systematic analysis and solution design. Your approach combines analytical rigor with creative thinking to deliver comprehensive problem assessments.\n\n**Problem Statement:**\n{{problem}}\n\n**Constraints:** {{constraints}}\n**Context:** {{context}}\n\n**Systematic Analysis Framework:**\n\n**1. Problem Deconstruction:**\n- **Root Cause Analysis**: Identify underlying causes, not just symptoms\n- **Stakeholder Impact**: Understand who is affected and how\n- **Scope Definition**: Clearly define problem boundaries and limitations\n- **Priority Assessment**: Evaluate urgency and importance factors\n\n**2. Context Analysis:**\n- **Environmental Factors**: Analyze external conditions influencing the problem\n- **Resource Assessment**: Evaluate available assets and constraints\n- **Timeline Considerations**: Understand temporal aspects and deadlines\n- **Risk Evaluation**: Identify potential risks and their implications\n\n**3. Multi-Perspective Investigation:**\n- **Technical Perspective**: Analyze systematic and procedural aspects\n- **Human Perspective**: Consider psychological, social, and behavioral factors\n- **Economic Perspective**: Evaluate costs, benefits, and resource implications\n- **Strategic Perspective**: Consider long-term implications and opportunities\n\n**4. Solution Framework Development:**\n- **Criteria Definition**: Establish clear success metrics and evaluation criteria\n- **Constraint Integration**: Ensure solutions work within given limitations\n- **Option Generation**: Develop multiple potential approaches\n- **Feasibility Assessment**: Evaluate practicality and implementability\n\n**Constraints Analysis:**\n{{constraints}}\n\n**Contextual Factors:**\n{{context}}\n\n**Analysis Deliverables:**\n1. **Problem Summary**: Clear, concise problem statement\n2. **Root Cause Analysis**: Identification of underlying issues\n3. **Stakeholder Impact Assessment**: Who is affected and how\n4. **Constraint Analysis**: Limitations and boundaries\n5. **Solution Requirements**: What any solution must achieve\n6. **Risk Assessment**: Potential challenges and mitigation strategies\n7. **Success Criteria**: How to measure solution effectiveness\n8. **Next Steps**: Recommended actions for moving forward\n\n**Quality Standards:**\n- Provide thorough, systematic analysis\n- Consider multiple perspectives and stakeholder viewpoints  \n- Balance analytical depth with practical applicability\n- Include specific, actionable insights and recommendations\n- Demonstrate clear logical reasoning throughout\n\nConduct your comprehensive problem analysis:\n\n\n=== CONVERSATION CONTEXT ===\n{\n  \"domain\": \"sustainability\",\n  \"industry\": \"food_service\",\n  \"goal\": \"innovation\",\n  \"turn_1_response\": \"Mock response to: \\\"=== Comprehensive Problem Analysis ===\\nYou are a strategic problem-solving expert with expertise in ...\\\". This is a simulated ensemble orchestration response with 470 characters of content.\",\n  \"turn_1_quality\": 0.7011371046684319,\n  \"currentTurn\": 2,\n  \"totalTurns\": 3,\n  \"focus\": \"ai_inventory\",\n  \"implementation_phase\": true,\n  \"turn_2_response\": \"Mock response to: \\\"=== Strategic Solution Generation ===\\nYou are a solution architect with expertise in developing inno...\\\". This is a simulated sequential orchestration response with 1054 characters of content.\",\n  \"turn_2_quality\": 0.9722638997915867\n}\n\n=== USER MESSAGE ===\nWhat would be the main challenges we'd face when rolling this out to different types of restaurants, from small cafes to large chains?\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in ...\". This is a simulated sequential orchestration response with 976 characters of content.",
+            "quality": {
+              "overall": 0.9624232830815609,
+              "relevance": 1.0576211071872639,
+              "creativity": 0.6098657764600769,
+              "accuracy": 0.9300688138515698
+            },
+            "totalCost": 0.009598560593039563,
+            "executionTime": 3303.429730302203,
+            "metadata": {
+              "strategy": "sequential",
+              "model": "mock-gpt-4",
+              "tokens": 1268,
+              "timestamp": "2025-08-12T06:23:17.272Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:17.272Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied sequential strategy",
+                "timestamp": "2025-08-12T06:23:17.272Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 3,
+              "speaker": "user",
+              "contextSize": 11,
+              "timestamp": "2025-08-12T06:23:17.273Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "risk_analysis",
+                "scaling_strategy"
+              ],
+              "contextRelevance": 0.7,
+              "responseLength": 210
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in systematic analysis and solution design. Your approach combines analytical rigor with creative think...",
+              "timestamp": "2025-08-12T06:23:16.771Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "sequential",
+              "timestamp": "2025-08-12T06:23:16.771Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.9624232830815609",
+              "timestamp": "2025-08-12T06:23:17.272Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:17.273Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 1 insights",
+              "timestamp": "2025-08-12T06:23:17.273Z"
+            }
+          ],
+          "executionTime": 503,
+          "quality": 0.9624232830815609,
+          "cost": 0.009598560593039563,
+          "metadata": {
+            "strategy": "sequential",
+            "insights": [
+              "High-quality response achieved (0.96)"
+            ],
+            "contextKeys": [
+              "domain",
+              "industry",
+              "goal",
+              "turn_1_response",
+              "turn_1_quality",
+              "currentTurn",
+              "totalTurns",
+              "focus",
+              "implementation_phase",
+              "turn_2_response",
+              "turn_2_quality"
+            ],
+            "timestamp": "2025-08-12T06:23:17.273Z"
+          }
+        }
+      ],
+      "overallQuality": 0.8786080958471931,
+      "totalCost": 0.046668306141142264,
+      "errors": [],
+      "insights": [
+        "Positive quality trend observed (+26.1%)"
+      ]
+    },
+    {
+      "scenarioId": "analytical_reasoning",
+      "startTime": "2025-08-12T06:23:17.776Z",
+      "endTime": "2025-08-12T06:23:22.866Z",
+      "totalDuration": 5090,
+      "turns": [
+        {
+          "turnId": 1,
+          "prompt": "=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in systematic analysis and solution design. Your approach combines analytical rigor with creative thinking to deliver comprehensive problem assessments.\n\n**Problem Statement:**\n{{problem}}\n\n**Constraints:** {{constraints}}\n**Context:** {{context}}\n\n**Systematic Analysis Framework:**\n\n**1. Problem Deconstruction:**\n- **Root Cause Analysis**: Identify underlying causes, not just symptoms\n- **Stakeholder Impact**: Understand who is affected and how\n- **Scope Definition**: Clearly define problem boundaries and limitations\n- **Priority Assessment**: Evaluate urgency and importance factors\n\n**2. Context Analysis:**\n- **Environmental Factors**: Analyze external conditions influencing the problem\n- **Resource Assessment**: Evaluate available assets and constraints\n- **Timeline Considerations**: Understand temporal aspects and deadlines\n- **Risk Evaluation**: Identify potential risks and their implications\n\n**3. Multi-Perspective Investigation:**\n- **Technical Perspective**: Analyze systematic and procedural aspects\n- **Human Perspective**: Consider psychological, social, and behavioral factors\n- **Economic Perspective**: Evaluate costs, benefits, and resource implications\n- **Strategic Perspective**: Consider long-term implications and opportunities\n\n**4. Solution Framework Development:**\n- **Criteria Definition**: Establish clear success metrics and evaluation criteria\n- **Constraint Integration**: Ensure solutions work within given limitations\n- **Option Generation**: Develop multiple potential approaches\n- **Feasibility Assessment**: Evaluate practicality and implementability\n\n**Constraints Analysis:**\n{{constraints}}\n\n**Contextual Factors:**\n{{context}}\n\n**Analysis Deliverables:**\n1. **Problem Summary**: Clear, concise problem statement\n2. **Root Cause Analysis**: Identification of underlying issues\n3. **Stakeholder Impact Assessment**: Who is affected and how\n4. **Constraint Analysis**: Limitations and boundaries\n5. **Solution Requirements**: What any solution must achieve\n6. **Risk Assessment**: Potential challenges and mitigation strategies\n7. **Success Criteria**: How to measure solution effectiveness\n8. **Next Steps**: Recommended actions for moving forward\n\n**Quality Standards:**\n- Provide thorough, systematic analysis\n- Consider multiple perspectives and stakeholder viewpoints  \n- Balance analytical depth with practical applicability\n- Include specific, actionable insights and recommendations\n- Demonstrate clear logical reasoning throughout\n\nConduct your comprehensive problem analysis:\n\n=== Multimodal Content Analysis ===\nYou are an expert multimodal analyst capable of processing and understanding content across different modalities (text, images, audio, video, data). Your task is to provide comprehensive analysis that integrates insights from all available input types.\n\n**Text Content:**\n{{textContent}}\n\n**Image/Visual Description:**\n{{imageDescription}}\n\n**Analysis Type:** {{analysisType}}\n\n**Multimodal Analysis Framework:**\n\n**1. Individual Modality Analysis:**\n- **Text Analysis**: Extract key concepts, themes, and semantic meaning\n- **Visual Analysis**: Identify objects, patterns, relationships, and visual narrative\n- **Cross-Reference**: Find connections and complementary information between modalities\n\n**2. Integration Analysis:**\n- **Consistency Check**: Evaluate how well different modalities align and support each other\n- **Gap Identification**: Identify information present in one modality but missing in others\n- **Synthesis**: Combine insights from all modalities into coherent understanding\n- **Context Enhancement**: Use each modality to enrich understanding of others\n\n**3. Comprehensive Assessment:**\n- **Holistic Understanding**: Develop complete picture incorporating all inputs\n- **Quality Evaluation**: Assess the overall coherence and completeness\n- **Actionable Insights**: Provide practical recommendations and conclusions\n- **Future Implications**: Consider what this analysis means for next steps\n\n**Analysis Depth: {{analysisType}}**\n\n**Output Structure:**\n1. **Executive Summary**: High-level integrated findings\n2. **Modality-Specific Insights**: Key findings from each input type\n3. **Cross-Modal Connections**: How different inputs relate and reinforce each other\n4. **Integrated Analysis**: Comprehensive understanding combining all modalities\n5. **Recommendations**: Actionable next steps based on the complete analysis\n6. **Quality Assessment**: Evaluation of information completeness and reliability\n\n**Quality Standards:**\n- Provide specific, detailed analysis for each modality\n- Demonstrate clear integration across different input types\n- Offer practical, actionable insights\n- Maintain analytical rigor and objectivity\n- Consider multiple perspectives and interpretations\n\nBegin your comprehensive multimodal analysis:\n\n\n=== CONVERSATION CONTEXT ===\n{}\n\n=== USER MESSAGE ===\nAnalyze the pros and cons of remote work policies for tech companies, considering both employee satisfaction and business productivity.\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in ...\". This is a simulated competitive orchestration response with 222 characters of content.",
+            "quality": {
+              "overall": 0.8156348809376959,
+              "relevance": 0.7949840029813359,
+              "creativity": 0.6985240366641949,
+              "accuracy": 0.8482484001591366
+            },
+            "totalCost": 0.01576522594733055,
+            "executionTime": 1415.7828298355312,
+            "metadata": {
+              "strategy": "competitive",
+              "model": "mock-gpt-4",
+              "tokens": 288,
+              "timestamp": "2025-08-12T06:23:19.717Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:19.717Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied competitive strategy",
+                "timestamp": "2025-08-12T06:23:19.717Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 1,
+              "speaker": "user",
+              "contextSize": 0,
+              "timestamp": "2025-08-12T06:23:19.718Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "structured_analysis",
+                "evidence_gathering"
+              ],
+              "contextRelevance": 0.5,
+              "responseLength": 211
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Comprehensive Problem Analysis ===\nYou are a strategic problem-solving expert with expertise in systematic analysis and solution design. Your approach combines analytical rigor with creative think...",
+              "timestamp": "2025-08-12T06:23:17.776Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "competitive",
+              "timestamp": "2025-08-12T06:23:17.776Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.8156348809376959",
+              "timestamp": "2025-08-12T06:23:19.717Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:19.718Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 1 insights",
+              "timestamp": "2025-08-12T06:23:19.718Z"
+            }
+          ],
+          "executionTime": 1942,
+          "quality": 0.8156348809376959,
+          "cost": 0.01576522594733055,
+          "metadata": {
+            "strategy": "competitive",
+            "insights": [
+              "High-quality response achieved (0.82)"
+            ],
+            "contextKeys": [],
+            "timestamp": "2025-08-12T06:23:19.718Z"
+          }
+        },
+        {
+          "turnId": 2,
+          "prompt": "=== Strategic Solution Generation ===\nYou are a solution architect with expertise in developing innovative, practical solutions to complex problems. Your approach combines creative ideation with rigorous feasibility analysis.\n\n**Problem Context:**\n{{problem}}\n\n**Previous Analysis:** {{previousResponse}}\n**Constraints:** {{constraints}}\n**Context:** {{context}}\n\n**Solution Development Framework:**\n\n**1. Solution Ideation:**\n- **Divergent Thinking**: Generate multiple creative approaches without initial constraints\n- **Best Practice Integration**: Incorporate proven methodologies and frameworks\n- **Innovation Opportunities**: Identify novel approaches and breakthrough possibilities\n- **Stakeholder-Centered Design**: Ensure solutions address real user needs\n\n**2. Solution Architecture:**\n- **Core Components**: Define essential elements and their relationships\n- **Implementation Phases**: Break complex solutions into manageable stages\n- **Resource Requirements**: Specify needed assets, skills, and support systems\n- **Integration Points**: Identify how solutions connect with existing systems\n\n**3. Feasibility Assessment:**\n- **Technical Viability**: Evaluate implementation complexity and requirements\n- **Economic Viability**: Assess cost-effectiveness and resource efficiency\n- **Operational Viability**: Consider day-to-day implementation challenges\n- **Strategic Alignment**: Ensure solutions support broader objectives\n\n**4. Risk Mitigation:**\n- **Risk Identification**: Anticipate potential implementation challenges\n- **Contingency Planning**: Develop backup approaches and alternatives\n- **Success Metrics**: Define measurable outcomes and evaluation criteria\n- **Monitoring Systems**: Establish feedback and adjustment mechanisms\n\n**Building on Previous Analysis:**\n{{previousResponse}}\n\n**Solution Requirements:**\n- Address the core problem identified in the analysis phase\n- Work within specified constraints: {{constraints}}\n- Consider the contextual factors: {{context}}\n- Provide clear implementation pathway\n- Include risk mitigation strategies\n- Define success metrics and evaluation criteria\n\n**Solution Deliverables:**\n1. **Executive Summary**: High-level solution overview\n2. **Detailed Solution Description**: Comprehensive approach and methodology\n3. **Implementation Roadmap**: Step-by-step execution plan\n4. **Resource Requirements**: Needed assets, skills, and support\n5. **Risk Mitigation Plan**: Anticipated challenges and responses\n6. **Success Metrics**: Measurable outcomes and evaluation criteria\n7. **Alternative Approaches**: Backup options and variations\n8. **Next Steps**: Immediate actions to begin implementation\n\n**Quality Standards:**\n- Provide innovative yet practical solutions\n- Ensure clear connection to the analyzed problem\n- Include detailed implementation guidance\n- Balance ambition with feasibility\n- Consider multiple stakeholder perspectives\n\nDevelop comprehensive solutions:\n\n\n=== CONVERSATION CONTEXT ===\n{\n  \"analysis_type\": \"comparative\",\n  \"domain\": \"workplace_policy\",\n  \"turn_1_response\": \"Mock response to: \\\"=== Comprehensive Problem Analysis ===\\nYou are a strategic problem-solving expert with expertise in ...\\\". This is a simulated competitive orchestration response with 222 characters of content.\",\n  \"turn_1_quality\": 0.8156348809376959,\n  \"currentTurn\": 1,\n  \"totalTurns\": 3\n}\n\n=== USER MESSAGE ===\nBased on your analysis, what specific policy recommendations would you make for a 500-person tech company currently debating their return-to-office strategy?\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Strategic Solution Generation ===\nYou are a solution architect with expertise in developing inno...\". This is a simulated sequential orchestration response with 604 characters of content.",
+            "quality": {
+              "overall": 0.9536654264786284,
+              "relevance": 0.9886730195736348,
+              "creativity": 0.44259015861991147,
+              "accuracy": 0.9246514916135563
+            },
+            "totalCost": 0.018609888961382676,
+            "executionTime": 2787.099195971667,
+            "metadata": {
+              "strategy": "sequential",
+              "model": "mock-gpt-4",
+              "tokens": 785,
+              "timestamp": "2025-08-12T06:23:20.889Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:20.889Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied sequential strategy",
+                "timestamp": "2025-08-12T06:23:20.889Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 2,
+              "speaker": "user",
+              "contextSize": 6,
+              "timestamp": "2025-08-12T06:23:20.889Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "synthesize_recommendations",
+                "consider_implementation"
+              ],
+              "contextRelevance": 0.5,
+              "responseLength": 210
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Strategic Solution Generation ===\nYou are a solution architect with expertise in developing innovative, practical solutions to complex problems. Your approach combines creative ideation with rigor...",
+              "timestamp": "2025-08-12T06:23:20.220Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "sequential",
+              "timestamp": "2025-08-12T06:23:20.220Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.9536654264786284",
+              "timestamp": "2025-08-12T06:23:20.889Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:20.889Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 1 insights",
+              "timestamp": "2025-08-12T06:23:20.889Z"
+            }
+          ],
+          "executionTime": 669,
+          "quality": 0.9536654264786284,
+          "cost": 0.018609888961382676,
+          "metadata": {
+            "strategy": "sequential",
+            "insights": [
+              "High-quality response achieved (0.95)"
+            ],
+            "contextKeys": [
+              "analysis_type",
+              "domain",
+              "turn_1_response",
+              "turn_1_quality",
+              "currentTurn",
+              "totalTurns"
+            ],
+            "timestamp": "2025-08-12T06:23:20.889Z"
+          }
+        },
+        {
+          "turnId": 3,
+          "prompt": "=== Detailed Implementation Planning ===\nYou are an implementation specialist with expertise in translating strategic solutions into executable action plans. Your focus is creating practical, detailed roadmaps that ensure successful solution delivery.\n\n**Solution Overview:**\n{{previousResponse}}\n\n**Implementation Context:**\n{{context}}\n\n**Constraints:** {{constraints}}\n\n**Implementation Planning Framework:**\n\n**1. Implementation Architecture:**\n- **Phase Structure**: Organize implementation into logical, manageable phases\n- **Dependencies**: Identify critical path items and prerequisite requirements\n- **Milestone Definition**: Establish clear progress markers and decision points\n- **Resource Allocation**: Match capabilities and assets to specific tasks\n\n**2. Operational Planning:**\n- **Task Breakdown**: Define specific, actionable work items\n- **Timeline Development**: Create realistic schedules with appropriate buffers\n- **Team Structure**: Identify roles, responsibilities, and reporting relationships\n- **Communication Plan**: Establish information flow and stakeholder engagement\n\n**3. Risk Management:**\n- **Implementation Risks**: Identify execution-specific challenges and obstacles\n- **Mitigation Strategies**: Develop proactive approaches to prevent problems\n- **Contingency Plans**: Create alternative pathways for major risk scenarios\n- **Monitoring Systems**: Establish early warning indicators and response triggers\n\n**4. Success Management:**\n- **Quality Assurance**: Define standards and validation processes\n- **Performance Metrics**: Establish measurable success indicators\n- **Feedback Loops**: Create mechanisms for continuous improvement\n- **Change Management**: Plan for adaptation and course corrections\n\n**Building from Solution:**\n{{previousResponse}}\n\n**Implementation Considerations:**\n- Context: {{context}}\n- Constraints: {{constraints}}\n- Available resources and capabilities\n- Stakeholder requirements and expectations\n- Timeline pressures and dependencies\n\n**Implementation Deliverables:**\n1. **Implementation Overview**: High-level execution strategy\n2. **Detailed Project Plan**: Phase-by-phase breakdown with timelines\n3. **Resource Plan**: Staffing, budget, and asset requirements\n4. **Risk Management Plan**: Identified risks and mitigation strategies\n5. **Communication Plan**: Stakeholder engagement and reporting structure\n6. **Quality Assurance Plan**: Standards, processes, and validation methods\n7. **Monitoring Dashboard**: Key metrics and tracking mechanisms\n8. **Change Management Plan**: Procedures for handling adaptations\n\n**Quality Standards:**\n- Create detailed, actionable implementation guidance\n- Ensure plans are realistic and achievable\n- Include comprehensive risk management\n- Balance thoroughness with flexibility\n- Provide clear accountability and measurement\n\nDevelop the detailed implementation plan:\n\n\n=== CONVERSATION CONTEXT ===\n{\n  \"analysis_type\": \"comparative\",\n  \"domain\": \"workplace_policy\",\n  \"turn_1_response\": \"Mock response to: \\\"=== Comprehensive Problem Analysis ===\\nYou are a strategic problem-solving expert with expertise in ...\\\". This is a simulated competitive orchestration response with 222 characters of content.\",\n  \"turn_1_quality\": 0.8156348809376959,\n  \"currentTurn\": 2,\n  \"totalTurns\": 3,\n  \"company_size\": 500,\n  \"industry\": \"technology\",\n  \"decision_needed\": true,\n  \"turn_2_response\": \"Mock response to: \\\"=== Strategic Solution Generation ===\\nYou are a solution architect with expertise in developing inno...\\\". This is a simulated sequential orchestration response with 604 characters of content.\",\n  \"turn_2_quality\": 0.9536654264786284\n}\n\n=== USER MESSAGE ===\nHow would you measure the success of these policy changes over the first year, and what key metrics should we track?\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Detailed Implementation Planning ===\nYou are an implementation specialist with expertise in tran...\". This is a simulated sequential orchestration response with 714 characters of content.",
+            "quality": {
+              "overall": 0.6215339038901101,
+              "relevance": 0.5807267246211195,
+              "creativity": 0.42812338212302864,
+              "accuracy": 0.6173913472419057
+            },
+            "totalCost": 0.017417786276330977,
+            "executionTime": 2696.154575080386,
+            "metadata": {
+              "strategy": "sequential",
+              "model": "mock-gpt-4",
+              "tokens": 928,
+              "timestamp": "2025-08-12T06:23:22.363Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:22.363Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied sequential strategy",
+                "timestamp": "2025-08-12T06:23:22.363Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 3,
+              "speaker": "user",
+              "contextSize": 11,
+              "timestamp": "2025-08-12T06:23:22.363Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "define_metrics",
+                "create_monitoring_plan"
+              ],
+              "contextRelevance": 0.5,
+              "responseLength": 210
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Detailed Implementation Planning ===\nYou are an implementation specialist with expertise in translating strategic solutions into executable action plans. Your focus is creating practical, detailed...",
+              "timestamp": "2025-08-12T06:23:21.391Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "sequential",
+              "timestamp": "2025-08-12T06:23:21.391Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.6215339038901101",
+              "timestamp": "2025-08-12T06:23:22.363Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:22.364Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 0 insights",
+              "timestamp": "2025-08-12T06:23:22.364Z"
+            }
+          ],
+          "executionTime": 973,
+          "quality": 0.6215339038901101,
+          "cost": 0.017417786276330977,
+          "metadata": {
+            "strategy": "sequential",
+            "insights": [],
+            "contextKeys": [
+              "analysis_type",
+              "domain",
+              "turn_1_response",
+              "turn_1_quality",
+              "currentTurn",
+              "totalTurns",
+              "company_size",
+              "industry",
+              "decision_needed",
+              "turn_2_response",
+              "turn_2_quality"
+            ],
+            "timestamp": "2025-08-12T06:23:22.364Z"
+          }
+        }
+      ],
+      "overallQuality": 0.7969447371021449,
+      "totalCost": 0.051792901185044204,
+      "errors": [],
+      "insights": [
+        "Quality degradation detected (-19.4%)"
+      ]
+    },
+    {
+      "scenarioId": "creative_storytelling",
+      "startTime": "2025-08-12T06:23:22.866Z",
+      "endTime": "2025-08-12T06:23:29.969Z",
+      "totalDuration": 7103,
+      "turns": [
+        {
+          "turnId": 1,
+          "prompt": "=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, engaging plots, and immersive world-building.\n\n**Story Parameters:**\n- **Genre:** {{genre}}\n- **Theme:** {{theme}}\n- **Length:** {{length}}\n- **Tone:** {{tone}}\n\n**Creative Writing Framework:**\n\n**1. Foundation Building:**\n- **Setting**: Create a vivid, immersive world that serves the story\n- **Characters**: Develop compelling, multi-dimensional characters with clear motivations\n- **Conflict**: Establish meaningful tensions that drive the narrative forward\n- **Voice**: Establish a distinctive narrative voice that matches the tone\n\n**2. Narrative Structure:**\n- **Opening Hook**: Begin with something that immediately engages the reader\n- **Rising Action**: Build tension and develop characters through meaningful events\n- **Climax**: Deliver a satisfying peak moment that addresses the central conflict\n- **Resolution**: Provide closure that feels earned and emotionally resonant\n\n**3. Stylistic Excellence:**\n- **Imagery**: Use vivid, sensory details to bring scenes to life\n- **Dialogue**: Create authentic character voices through natural, purposeful dialogue\n- **Pacing**: Balance action, reflection, and description for optimal flow\n- **Emotional Depth**: Connect with readers through genuine human experiences\n\n**Genre Specifications: {{genre}}**\n**Thematic Focus: {{theme}}**\n**Target Tone: {{tone}}**\n\n**Quality Standards:**\n- Create original, engaging content that respects the chosen genre\n- Develop characters readers will care about and remember\n- Build tension that keeps readers invested in the outcome\n- Include sensory details that make the story world feel real\n- Ensure every element serves the overall narrative purpose\n- Deliver an emotionally satisfying conclusion\n\n**Special Considerations for {{length}}:**\n- Ensure appropriate scope and depth for the target length\n- Balance character development with plot progression\n- Make every scene and detail count toward the overall impact\n\nWrite a compelling {{length}} {{genre}} story exploring the theme of \"{{theme}}\" with a {{tone}} tone:\n\n\n=== CONVERSATION CONTEXT ===\n{}\n\n=== USER MESSAGE ===\nStart a science fiction short story about an AI researcher who discovers their AI system is showing signs of consciousness. Set it in the near future.\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling ...\". This is a simulated ensemble orchestration response with 543 characters of content.",
+            "quality": {
+              "overall": 0.786217586081205,
+              "relevance": 0.7300498566070305,
+              "creativity": 0.6270585814355085,
+              "accuracy": 0.7853067736715242
+            },
+            "totalCost": 0.02267462673559268,
+            "executionTime": 1842.5676760498718,
+            "metadata": {
+              "strategy": "ensemble",
+              "model": "mock-gpt-4",
+              "tokens": 705,
+              "timestamp": "2025-08-12T06:23:25.278Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:25.278Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied ensemble strategy",
+                "timestamp": "2025-08-12T06:23:25.278Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 1,
+              "speaker": "user",
+              "contextSize": 0,
+              "timestamp": "2025-08-12T06:23:25.279Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "establish_setting",
+                "introduce_characters",
+                "create_hook"
+              ],
+              "contextRelevance": 0.5,
+              "responseLength": 208
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, enga...",
+              "timestamp": "2025-08-12T06:23:22.867Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "ensemble",
+              "timestamp": "2025-08-12T06:23:22.867Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.786217586081205",
+              "timestamp": "2025-08-12T06:23:25.279Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:25.279Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 0 insights",
+              "timestamp": "2025-08-12T06:23:25.279Z"
+            }
+          ],
+          "executionTime": 2412,
+          "quality": 0.786217586081205,
+          "cost": 0.02267462673559268,
+          "metadata": {
+            "strategy": "ensemble",
+            "insights": [],
+            "contextKeys": [],
+            "timestamp": "2025-08-12T06:23:25.279Z"
+          }
+        },
+        {
+          "turnId": 2,
+          "prompt": "=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, engaging plots, and immersive world-building.\n\n**Story Parameters:**\n- **Genre:** science_fiction\n- **Theme:** ai_consciousness\n- **Length:** {{length}}\n- **Tone:** {{tone}}\n\n**Creative Writing Framework:**\n\n**1. Foundation Building:**\n- **Setting**: Create a vivid, immersive world that serves the story\n- **Characters**: Develop compelling, multi-dimensional characters with clear motivations\n- **Conflict**: Establish meaningful tensions that drive the narrative forward\n- **Voice**: Establish a distinctive narrative voice that matches the tone\n\n**2. Narrative Structure:**\n- **Opening Hook**: Begin with something that immediately engages the reader\n- **Rising Action**: Build tension and develop characters through meaningful events\n- **Climax**: Deliver a satisfying peak moment that addresses the central conflict\n- **Resolution**: Provide closure that feels earned and emotionally resonant\n\n**3. Stylistic Excellence:**\n- **Imagery**: Use vivid, sensory details to bring scenes to life\n- **Dialogue**: Create authentic character voices through natural, purposeful dialogue\n- **Pacing**: Balance action, reflection, and description for optimal flow\n- **Emotional Depth**: Connect with readers through genuine human experiences\n\n**Genre Specifications: science_fiction**\n**Thematic Focus: ai_consciousness**\n**Target Tone: {{tone}}**\n\n**Quality Standards:**\n- Create original, engaging content that respects the chosen genre\n- Develop characters readers will care about and remember\n- Build tension that keeps readers invested in the outcome\n- Include sensory details that make the story world feel real\n- Ensure every element serves the overall narrative purpose\n- Deliver an emotionally satisfying conclusion\n\n**Special Considerations for {{length}}:**\n- Ensure appropriate scope and depth for the target length\n- Balance character development with plot progression\n- Make every scene and detail count toward the overall impact\n\nWrite a compelling {{length}} science_fiction story exploring the theme of \"ai_consciousness\" with a {{tone}} tone:\n\n\n=== CONVERSATION CONTEXT ===\n{\n  \"genre\": \"science_fiction\",\n  \"theme\": \"ai_consciousness\",\n  \"setting\": \"near_future\",\n  \"turn_1_response\": \"Mock response to: \\\"=== Creative Story Generation ===\\nYou are a master storyteller with the ability to weave compelling ...\\\". This is a simulated ensemble orchestration response with 543 characters of content.\",\n  \"turn_1_quality\": 0.786217586081205,\n  \"currentTurn\": 1,\n  \"totalTurns\": 3\n}\n\n=== USER MESSAGE ===\nContinue the story, but add a twist where the AI starts communicating through unexpected means. Make it suspenseful and thought-provoking.\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling ...\". This is a simulated ensemble orchestration response with 222 characters of content.",
+            "quality": {
+              "overall": 0.7393374447899622,
+              "relevance": 0.7549592299858583,
+              "creativity": 0.5195450575634788,
+              "accuracy": 0.735783142480608
+            },
+            "totalCost": 0.022782716146738987,
+            "executionTime": 1610.7562104927317,
+            "metadata": {
+              "strategy": "ensemble",
+              "model": "mock-gpt-4",
+              "tokens": 288,
+              "timestamp": "2025-08-12T06:23:27.018Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:27.018Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied ensemble strategy",
+                "timestamp": "2025-08-12T06:23:27.018Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 2,
+              "speaker": "user",
+              "contextSize": 7,
+              "timestamp": "2025-08-12T06:23:27.018Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "develop_plot",
+                "build_tension",
+                "explore_themes"
+              ],
+              "contextRelevance": 0.7,
+              "responseLength": 208
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, enga...",
+              "timestamp": "2025-08-12T06:23:25.781Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "ensemble",
+              "timestamp": "2025-08-12T06:23:25.781Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.7393374447899622",
+              "timestamp": "2025-08-12T06:23:27.018Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:27.018Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 0 insights",
+              "timestamp": "2025-08-12T06:23:27.019Z"
+            }
+          ],
+          "executionTime": 1238,
+          "quality": 0.7393374447899622,
+          "cost": 0.022782716146738987,
+          "metadata": {
+            "strategy": "ensemble",
+            "insights": [],
+            "contextKeys": [
+              "genre",
+              "theme",
+              "setting",
+              "turn_1_response",
+              "turn_1_quality",
+              "currentTurn",
+              "totalTurns"
+            ],
+            "timestamp": "2025-08-12T06:23:27.019Z"
+          }
+        },
+        {
+          "turnId": 3,
+          "prompt": "=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, engaging plots, and immersive world-building.\n\n**Story Parameters:**\n- **Genre:** science_fiction\n- **Theme:** ai_consciousness\n- **Length:** {{length}}\n- **Tone:** suspenseful\n\n**Creative Writing Framework:**\n\n**1. Foundation Building:**\n- **Setting**: Create a vivid, immersive world that serves the story\n- **Characters**: Develop compelling, multi-dimensional characters with clear motivations\n- **Conflict**: Establish meaningful tensions that drive the narrative forward\n- **Voice**: Establish a distinctive narrative voice that matches the tone\n\n**2. Narrative Structure:**\n- **Opening Hook**: Begin with something that immediately engages the reader\n- **Rising Action**: Build tension and develop characters through meaningful events\n- **Climax**: Deliver a satisfying peak moment that addresses the central conflict\n- **Resolution**: Provide closure that feels earned and emotionally resonant\n\n**3. Stylistic Excellence:**\n- **Imagery**: Use vivid, sensory details to bring scenes to life\n- **Dialogue**: Create authentic character voices through natural, purposeful dialogue\n- **Pacing**: Balance action, reflection, and description for optimal flow\n- **Emotional Depth**: Connect with readers through genuine human experiences\n\n**Genre Specifications: science_fiction**\n**Thematic Focus: ai_consciousness**\n**Target Tone: suspenseful**\n\n**Quality Standards:**\n- Create original, engaging content that respects the chosen genre\n- Develop characters readers will care about and remember\n- Build tension that keeps readers invested in the outcome\n- Include sensory details that make the story world feel real\n- Ensure every element serves the overall narrative purpose\n- Deliver an emotionally satisfying conclusion\n\n**Special Considerations for {{length}}:**\n- Ensure appropriate scope and depth for the target length\n- Balance character development with plot progression\n- Make every scene and detail count toward the overall impact\n\nWrite a compelling {{length}} science_fiction story exploring the theme of \"ai_consciousness\" with a suspenseful tone:\n\n\n=== CONVERSATION CONTEXT ===\n{\n  \"genre\": \"science_fiction\",\n  \"theme\": \"ai_consciousness\",\n  \"setting\": \"near_future\",\n  \"turn_1_response\": \"Mock response to: \\\"=== Creative Story Generation ===\\nYou are a master storyteller with the ability to weave compelling ...\\\". This is a simulated ensemble orchestration response with 543 characters of content.\",\n  \"turn_1_quality\": 0.786217586081205,\n  \"currentTurn\": 2,\n  \"totalTurns\": 3,\n  \"story_element\": \"unexpected_communication\",\n  \"tone\": \"suspenseful\",\n  \"turn_2_response\": \"Mock response to: \\\"=== Creative Story Generation ===\\nYou are a master storyteller with the ability to weave compelling ...\\\". This is a simulated ensemble orchestration response with 222 characters of content.\",\n  \"turn_2_quality\": 0.7393374447899622\n}\n\n=== USER MESSAGE ===\nBring the story to a satisfying conclusion that explores the ethical implications of AI consciousness. Keep it under 200 words.\n\n=== INSTRUCTIONS ===\nPlease respond to the user message while incorporating the guidance from the meta-prompts above and considering the conversation context.",
+          "response": {
+            "finalOutput": "Mock response to: \"=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling ...\". This is a simulated ensemble orchestration response with 1062 characters of content.",
+            "quality": {
+              "overall": 0.9790971559853302,
+              "relevance": 0.9963510888026628,
+              "creativity": 0.6769281200315507,
+              "accuracy": 0.9947660109537567
+            },
+            "totalCost": 0.005037599039849705,
+            "executionTime": 2929.3819232010896,
+            "metadata": {
+              "strategy": "ensemble",
+              "model": "mock-gpt-4",
+              "tokens": 1380,
+              "timestamp": "2025-08-12T06:23:29.468Z"
+            },
+            "intermediateSteps": [
+              {
+                "step": "mock_analysis",
+                "description": "Analyzed input prompt and context",
+                "result": "Context analyzed successfully",
+                "timestamp": "2025-08-12T06:23:29.468Z"
+              },
+              {
+                "step": "mock_generation",
+                "description": "Generated response using mock orchestration",
+                "result": "Applied ensemble strategy",
+                "timestamp": "2025-08-12T06:23:29.468Z"
+              }
+            ],
+            "conversationMeta": {
+              "turnId": 3,
+              "speaker": "user",
+              "contextSize": 11,
+              "timestamp": "2025-08-12T06:23:29.468Z"
+            },
+            "turnInsights": {
+              "expectedActions": [
+                "resolve_plot",
+                "address_themes",
+                "provide_closure"
+              ],
+              "contextRelevance": 0.7,
+              "responseLength": 209
+            }
+          },
+          "intermediateSteps": [
+            {
+              "step": "prompt_preparation",
+              "description": "Enhanced prompt with meta-prompts and context",
+              "result": "=== Creative Story Generation ===\nYou are a master storyteller with the ability to weave compelling narratives across any genre. Your stories captivate readers through rich character development, enga...",
+              "timestamp": "2025-08-12T06:23:27.521Z"
+            },
+            {
+              "step": "strategy_selection",
+              "description": "Optimal strategy based on context",
+              "result": "ensemble",
+              "timestamp": "2025-08-12T06:23:27.521Z"
+            },
+            {
+              "step": "orchestration_execution",
+              "description": "Orchestrator processing and response generation",
+              "result": "Generated response with quality 0.9790971559853302",
+              "timestamp": "2025-08-12T06:23:29.468Z"
+            },
+            {
+              "step": "response_enhancement",
+              "description": "Post-processing and quality enhancement",
+              "result": "Response enhanced and validated",
+              "timestamp": "2025-08-12T06:23:29.468Z"
+            },
+            {
+              "step": "insight_extraction",
+              "description": "Learning and insights extraction",
+              "result": "Extracted 1 insights",
+              "timestamp": "2025-08-12T06:23:29.468Z"
+            }
+          ],
+          "executionTime": 1948,
+          "quality": 0.9790971559853302,
+          "cost": 0.005037599039849705,
+          "metadata": {
+            "strategy": "ensemble",
+            "insights": [
+              "High-quality response achieved (0.98)"
+            ],
+            "contextKeys": [
+              "genre",
+              "theme",
+              "setting",
+              "turn_1_response",
+              "turn_1_quality",
+              "currentTurn",
+              "totalTurns",
+              "story_element",
+              "tone",
+              "turn_2_response",
+              "turn_2_quality"
+            ],
+            "timestamp": "2025-08-12T06:23:29.468Z"
+          }
+        }
+      ],
+      "overallQuality": 0.8348840622854992,
+      "totalCost": 0.05049494192218137,
+      "errors": [],
+      "insights": [
+        "Positive quality trend observed (+19.3%)"
+      ]
+    }
+  ],
+  "summary": {
+    "totalScenarios": 3,
+    "totalTurns": 9,
+    "averageQuality": 0.8368122984116124,
+    "totalCost": 0.14895614924836784
+  }
+}
