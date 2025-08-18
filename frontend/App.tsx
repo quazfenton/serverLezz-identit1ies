@@ -6,6 +6,10 @@ import React, {
   useMemo,
 } from "react";
 import { createRoot } from "react-dom/client";
+import { getListings, getMyListings, updateListing, deleteListing, getMatches, getProfileById, getConnections } from "./api";
+import ListingCard from "./components/ListingCard";
+import RecommendationRow from "./components/RecommendationRow";
+import ConnectionRow from "./components/ConnectionRow";
 import {
   Profile,
   ServiceListing,
@@ -13,6 +17,8 @@ import {
   CoordinationMechanism,
   SystemMetrics,
 } from "../shared/types";
+import ToastContainer from './components/ToastContainer';
+import { useToast } from './hooks/useToast';
 
 // ==================== TYPES FOR AURA INTERFACE ====================
 
@@ -93,6 +99,20 @@ const AuraApp: React.FC = () => {
   );
   const [isOnboarding, setIsOnboarding] = useState<boolean>(true);
   const [onboardingStep, setOnboardingStep] = useState<number>(0);
+  const [profileName, setProfileName] = useState<string>("");
+  const [onboardingOffers, setOnboardingOffers] = useState<string>("");
+  const [onboardingNeeds, setOnboardingNeeds] = useState<string>("");
+  const [showNewListing, setShowNewListing] = useState<boolean>(false);
+  const [newListingTitle, setNewListingTitle] = useState<string>("");
+  const [newListingDescription, setNewListingDescription] = useState<string>("");
+  const [newListingTags, setNewListingTags] = useState<string>("");
+  const [listingsFeed, setListingsFeed] = useState<ServiceListing[]>([]);
+  const [myListings, setMyListings] = useState<ServiceListing[]>([]);
+  const [filterTags, setFilterTags] = useState<string>("");
+  const [filterRadiusKm, setFilterRadiusKm] = useState<string>("");
+  const [recommendedProfiles, setRecommendedProfiles] = useState<{ id: string; name: string; score: number; reason?: string }[]>([]);
+  const [connections, setConnections] = useState<{ id: string; name: string; strength: number }[]>([]);
+  const toast = useToast();
 
   // ==================== INITIALIZATION ====================
 
@@ -110,6 +130,16 @@ const AuraApp: React.FC = () => {
       }
     };
   }, []);
+
+  // Refresh listings and social panels when profile is ready
+  useEffect(() => {
+    if (currentProfile) {
+      refreshListings();
+    }
+  }, [currentProfile]);
+
+  const getSessionId = () => localStorage.getItem("sessionId");
+  const setSessionId = (sid: string) => localStorage.setItem("sessionId", sid);
 
   const initializeWebSocket = () => {
     wsRef.current = new WebSocket("ws://localhost:3003");
@@ -132,7 +162,8 @@ const AuraApp: React.FC = () => {
 
   const initializeUserProfile = async () => {
     try {
-      const response = await fetch("/api/profile/current");
+      const sid = getSessionId();
+      const response = await fetch("/api/profile/current", { headers: sid ? { "session-id": sid } : {} });
       if (response.ok) {
         const profile = await response.json();
         setCurrentProfile(profile);
@@ -164,6 +195,56 @@ const AuraApp: React.FC = () => {
     };
 
     simulate();
+  };
+
+  const refreshListings = async () => {
+    try {
+      const filters: any = {};
+      if (filterTags.trim()) {
+        filters.tags = filterTags.split(',').map((t) => t.trim()).filter(Boolean);
+      }
+      if (filterRadiusKm.trim()) {
+        const r = parseFloat(filterRadiusKm.trim());
+        if (!Number.isNaN(r)) {
+          filters.radiusKm = r;
+        }
+      }
+      if (currentProfile) {
+        filters.nearLat = currentProfile.location.latitude;
+        filters.nearLon = currentProfile.location.longitude;
+      }
+      const feed = await getListings(filters);
+      setListingsFeed(feed.listings || []);
+      const mine = await getMyListings();
+      setMyListings(mine.listings || []);
+      // pull recommended matches for the current user
+      const m = await getMatches();
+      const top = (m as any).matches?.slice(0, 5) || [];
+      const withNames: { id: string; name: string; score: number; reason?: string }[] = [];
+      for (const match of top) {
+        try {
+          const p = await getProfileById(match.profileB);
+          withNames.push({ id: p.id, name: p.name, score: match.matchScore, reason: match.reason });
+        } catch {
+          withNames.push({ id: match.profileB, name: match.profileB, score: match.matchScore, reason: match.reason });
+        }
+      }
+      setRecommendedProfiles(withNames);
+      // pull user's current connections
+      const c = await getConnections();
+      const withConnNames: { id: string; name: string; strength: number }[] = [];
+      for (const item of c.connections.slice(0, 10)) {
+        try {
+          const p = await getProfileById(item.profileId);
+          withConnNames.push({ id: p.id, name: p.name, strength: item.strength });
+        } catch {
+          withConnNames.push({ id: item.profileId, name: item.profileId, strength: item.strength });
+        }
+      }
+      setConnections(withConnNames);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const updateAuraPhysics = () => {
@@ -542,8 +623,11 @@ const AuraApp: React.FC = () => {
       }
 
       // Urgency factor
-      const hoursOld =
-        (Date.now() - listing.createdAt.getTime()) / (1000 * 60 * 60);
+      const createdAt =
+        typeof (listing as any).createdAt === 'string'
+          ? new Date((listing as any).createdAt)
+          : listing.createdAt;
+      const hoursOld = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
       const urgencyFactor = Math.max(0, 1 - hoursOld / 24);
       resonance += filter.urgency * urgencyFactor * 0.2;
     }
@@ -675,11 +759,25 @@ const AuraApp: React.FC = () => {
           <h2>{currentStep.title}</h2>
           <p>{currentStep.content}</p>
 
+          {onboardingStep === 0 && (
+            <div className="input-section">
+              <input
+                placeholder="Your display name"
+                className="onboarding-input"
+                style={{ minHeight: 0, height: 46 }}
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+              />
+            </div>
+          )}
+
           {onboardingStep === 1 && (
             <div className="input-section">
               <textarea
-                placeholder="I'm great at web development, have a car I can share, love cooking..."
+                placeholder="Offers/skills/goods (comma-separated): web development, car share, cooking"
                 className="onboarding-input"
+                value={onboardingOffers}
+                onChange={(e) => setOnboardingOffers(e.target.value)}
               />
             </div>
           )}
@@ -687,8 +785,10 @@ const AuraApp: React.FC = () => {
           {onboardingStep === 2 && (
             <div className="input-section">
               <textarea
-                placeholder="I need help with marketing, looking for a study group, need rides to work..."
+                placeholder="Needs (comma-separated): marketing help, study group, rides to work"
                 className="onboarding-input"
+                value={onboardingNeeds}
+                onChange={(e) => setOnboardingNeeds(e.target.value)}
               />
             </div>
           )}
@@ -699,7 +799,64 @@ const AuraApp: React.FC = () => {
               if (onboardingStep < onboardingSteps.length - 1) {
                 setOnboardingStep(onboardingStep + 1);
               } else {
-                completeOnboarding();
+                // Create profile via API
+                (async () => {
+                  try {
+                    const offers = onboardingOffers.split(',').map(s => s.trim()).filter(Boolean).slice(0,10);
+                    const needs = onboardingNeeds.split(',').map(s => s.trim()).filter(Boolean).slice(0,10);
+                    const body = {
+                      name: profileName || 'Anonymous',
+                      location: { latitude: 0, longitude: 0 },
+                      resources: {
+                        goods: offers.map((name: string, i: number) => ({
+                          id: `good_${i}`,
+                          name,
+                          category: 'general',
+                          quantity: 1,
+                          unit: 'item',
+                          quality: { rating: 4.0, reliability: 0.8, durability: 0.7, functionality: 0.8, aesthetics: 0.6, sustainability: 0.7 },
+                          availability: [],
+                          utility: 0.5,
+                          tags: [name.toLowerCase()],
+                        })),
+                        skills: offers.map((name: string, i: number) => ({
+                          id: `skill_${i}`,
+                          name,
+                          category: 'general',
+                          proficiencyLevel: 0.7,
+                          experience: 1,
+                          certifications: [],
+                          availability: [],
+                          tags: [name.toLowerCase()],
+                        })),
+                        needs: needs.map((name: string, i: number) => ({
+                          id: `need_${i}`,
+                          name,
+                          category: 'general',
+                          urgency: 0.5,
+                          priority: 0.6,
+                          quantity: 1,
+                          unit: 'unit',
+                          alternatives: [],
+                          tags: [name.toLowerCase()],
+                        })),
+                        timeAvailable: [],
+                        preferences: {},
+                      },
+                    };
+                    const resp = await fetch('/api/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)});
+                    if (!resp.ok) throw new Error('Failed to create profile');
+                    const { profile, sessionId } = await resp.json();
+                    setSessionId(sessionId);
+                    setCurrentProfile(profile);
+                    setIsOnboarding(false);
+                    setAuraState((prev) => ({ ...prev, centerNode: profile.id }));
+                    addNotification('Profile created');
+                  } catch (e) {
+                    console.error(e);
+                    addNotification('Failed to create profile');
+                  }
+                })();
               }
             }}
           >
@@ -1236,6 +1393,7 @@ const AuraApp: React.FC = () => {
 
   return (
     <div className="aura-app">
+      <ToastContainer />
       <canvas
         ref={canvasRef}
         width={window.innerWidth}
@@ -1254,6 +1412,7 @@ const AuraApp: React.FC = () => {
               <div className="profile-weight">
                 Weight: {currentProfile.weight.toFixed(2)}
               </div>
+              <button className="mode-button" onClick={() => setShowNewListing(true)}>+ New Listing</button>
             </div>
           )}
         </header>
@@ -1262,11 +1421,114 @@ const AuraApp: React.FC = () => {
           <ResonanceControls />
           <InteractionModeSelector />
           <SystemMetricsDisplay />
+          <div style={{ marginTop: 20 }}>
+            <h4>Browse Listings</h4>
+            <div className="input-section" style={{ marginTop: 10 }}>
+              <input
+                className="onboarding-input"
+                style={{ minHeight: 0, height: 40 }}
+                placeholder="Filter tags (comma-separated)"
+                value={filterTags}
+                onChange={(e) => setFilterTags(e.target.value)}
+              />
+              <input
+                className="onboarding-input"
+                style={{ minHeight: 0, height: 40, marginTop: 8 }}
+                placeholder="Radius km (optional)"
+                value={filterRadiusKm}
+                onChange={(e) => setFilterRadiusKm(e.target.value)}
+              />
+              <button className="mode-button" style={{ marginTop: 8 }} onClick={refreshListings}>Apply Filters</button>
+            </div>
+            <div style={{ marginTop: 10, maxHeight: 240, overflow: 'auto' }}>
+              {listingsFeed.slice(0, 20).map((l) => (
+                <ListingCard
+                  key={l.id}
+                  listing={l}
+                  canConnect={!!currentProfile && currentProfile.id !== l.providerId}
+                  onConnect={(pid) => currentProfile && sendConnectionRequest(currentProfile.id, pid)}
+                />
+              ))}
+              {listingsFeed.length === 0 && <div style={{ opacity: 0.7, fontSize: 12 }}>No listings match the filters.</div>}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <h4>My Listings</h4>
+              <div style={{ maxHeight: 180, overflow: 'auto' }}>
+                {myListings.slice(0, 10).map((l) => (
+                  <div key={l.id} className="listing-card" style={{ marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong>{l.title}</strong>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="mode-button" onClick={async () => {
+                          const title = prompt('New title', l.title) || l.title;
+                          const description = prompt('New description', l.description) || l.description;
+                          try { await updateListing(l.id, { title, description }); addNotification('Listing updated'); refreshListings(); } catch (e) { console.error(e); addNotification('Update failed'); }
+                        }}>Edit</button>
+                        <button className="mode-button" onClick={async () => {
+                          if (!confirm('Deactivate this listing?')) return;
+                          try { await deleteListing(l.id); addNotification('Listing deactivated'); refreshListings(); } catch (e) { console.error(e); addNotification('Delete failed'); }
+                        }}>Deactivate</button>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>{l.description}</div>
+                  </div>
+                ))}
+                {myListings.length === 0 && <div style={{ opacity: 0.7, fontSize: 12 }}>No listings created yet.</div>}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="right-panel">
-          <SelectedNodeDetails />
-        </div>
+          <div className="right-panel">
+            <SelectedNodeDetails />
+            <div style={{ marginTop: 20 }}>
+              <h4>Profile</h4>
+              {currentProfile ? (
+                <div className="profile-card" style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <img src={currentProfile.avatar} alt={currentProfile.name} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                    <strong>{currentProfile.name}</strong>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>Session: {(typeof window !== 'undefined' && localStorage.getItem('sessionId')) || '—'}</div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button className="mode-button" onClick={() => { localStorage.removeItem('sessionId'); window.location.reload(); }}>Sign out</button>
+                    <button className="mode-button" onClick={refreshListings}>Refresh Listings</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ opacity: 0.7, fontSize: 12 }}>No profile yet. Complete onboarding to create one.</div>
+              )}
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <h4>Recommended Matches</h4>
+              <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                {recommendedProfiles.map((r) => (
+                  <RecommendationRow
+                    key={r.id}
+                    id={r.id}
+                    name={r.name}
+                    score={r.score}
+                    reason={r.reason}
+                    onConnect={(id) => currentProfile && sendConnectionRequest(currentProfile.id, id)}
+                  />
+                ))}
+                {recommendedProfiles.length === 0 && (
+                  <div style={{ opacity: 0.7, fontSize: 12 }}>No matches yet. Try adjusting filters or creating a listing.</div>
+                )}
+              </div>
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <h4>Your Connections</h4>
+              <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                {connections.map((c) => (
+                  <ConnectionRow key={c.id} id={c.id} name={c.name} strength={c.strength} />
+                ))}
+                {connections.length === 0 && (
+                  <div style={{ opacity: 0.7, fontSize: 12 }}>No active connections yet.</div>
+                )}
+              </div>
+            </div>
+          </div>
 
         <div className="bottom-panel">
           <NotificationCenter />
@@ -1274,6 +1536,66 @@ const AuraApp: React.FC = () => {
       </div>
 
       <OnboardingFlow />
+
+      {showNewListing && (
+        <div className="onboarding-overlay">
+          <div className="onboarding-modal">
+            <h2>Create Listing</h2>
+            <input
+              className="onboarding-input"
+              placeholder="Title"
+              value={newListingTitle}
+              onChange={(e) => setNewListingTitle(e.target.value)}
+              style={{ minHeight: 0, height: 46, marginBottom: 10 }}
+            />
+            <textarea
+              className="onboarding-input"
+              placeholder="Description"
+              value={newListingDescription}
+              onChange={(e) => setNewListingDescription(e.target.value)}
+              style={{ minHeight: 80, marginTop: 10 }}
+            />
+            <input
+              className="onboarding-input"
+              placeholder="Tags (comma-separated)"
+              value={newListingTags}
+              onChange={(e) => setNewListingTags(e.target.value)}
+              style={{ minHeight: 0, height: 46, marginTop: 10, marginBottom: 20 }}
+            />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button
+                className="onboarding-button"
+                onClick={async () => {
+                  try {
+                    const sid = getSessionId();
+                    if (!sid) throw new Error('No session');
+                    const resp = await fetch('/api/listings', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'session-id': sid },
+                      body: JSON.stringify({
+                        title: newListingTitle || 'Untitled',
+                        description: newListingDescription || '',
+                        type: 'service',
+                        tags: newListingTags.split(',').map((t) => t.trim()).filter(Boolean),
+                      }),
+                    });
+                    if (!resp.ok) throw new Error('Failed to create listing');
+                    addNotification('Listing created');
+                    setShowNewListing(false);
+                    setNewListingTitle('');
+                    setNewListingDescription('');
+                    setNewListingTags('');
+                  } catch (e) {
+                    console.error(e);
+                    addNotification('Failed to create listing');
+                  }
+                }}
+              >Create</button>
+              <button className="mode-button" onClick={() => setShowNewListing(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1642,6 +1964,4 @@ document.head.appendChild(styleSheet);
 // ==================== EXPORT ====================
 
 const App: React.FC = AuraApp;
-
-const root = createRoot(document.getElementById("root")!);
-root.render(<App />);
+export default App;

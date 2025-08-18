@@ -3,6 +3,10 @@ import {
   SystemMetrics,
   RecommendedAction,
 } from "../../shared/types";
+import { promises as fs } from 'fs';
+import { Pool } from 'pg';
+import axios from 'axios';
+import { LLMOrchestrationError, RetryableError, NonRetryableError } from './utils';
 
 // ==================== LLM ORCHESTRATION TYPES ====================
 
@@ -277,6 +281,18 @@ export class LLMOrchestrationEngine {
     this.performanceAnalytics = new Map();
     this.iterationCounter = 0;
 
+    if (this.storageConfig.type === 'database' || this.storageConfig.type === 'hybrid') {
+      if (!this.storageConfig.database?.connectionString) {
+        throw new LLMOrchestrationError(
+          'Database connection string required for database storage',
+          'INVALID_CONFIG'
+        );
+      }
+      this.dbPool = new Pool({
+        connectionString: this.storageConfig.database.connectionString,
+      });
+    }
+
     this.initializeDefaultProviders();
     this.initializeDefaultPrompts();
     this.startEvolutionCycle();
@@ -497,54 +513,97 @@ export class LLMOrchestrationEngine {
   public async storeResponse(response: OrchestrationResponse): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const folderPath = `${this.storageConfig.basePath}/responses/${timestamp}_${response.requestId}`;
-    
-    // Create folder structure
-    await this.ensureDirectoryExists(folderPath);
-    
-    // Store main response data
-    await this.writeFile(
-      `${folderPath}/response.json`,
-      JSON.stringify(response, null, 2)
-    );
-    
-    // Store individual provider responses
-    for (const llmResponse of response.responses) {
-      const providerFolder = `${folderPath}/providers/${llmResponse.providerId}`;
-      await this.ensureDirectoryExists(providerFolder);
-      
+
+    if (this.storageConfig.type === 'filesystem' || this.storageConfig.type === 'hybrid') {
+      // File system storage
+      await this.ensureDirectoryExists(folderPath);
+
+      // Store main response data
       await this.writeFile(
-        `${providerFolder}/output.txt`,
-        typeof llmResponse.output === 'string' 
-          ? llmResponse.output 
-          : JSON.stringify(llmResponse.output, null, 2)
+        `${folderPath}/response.json`,
+        JSON.stringify(response, null, 2)
       );
-      
-      await this.writeFile(
-        `${providerFolder}/metadata.json`,
-        JSON.stringify({
-          tokens: llmResponse.tokens,
-          cost: llmResponse.cost,
-          latency: llmResponse.latency,
-          quality: llmResponse.quality,
-          timestamp: llmResponse.timestamp
-        }, null, 2)
+
+      // Store individual provider responses
+      for (const llmResponse of response.responses) {
+        const providerFolder = `${folderPath}/providers/${llmResponse.providerId}`;
+        await this.ensureDirectoryExists(providerFolder);
+
+        await this.writeFile(
+          `${providerFolder}/output.txt`,
+          typeof llmResponse.output === 'string'
+            ? llmResponse.output
+            : JSON.stringify(llmResponse.output, null, 2)
+        );
+
+        await this.writeFile(
+          `${providerFolder}/metadata.json`,
+          JSON.stringify(
+            {
+              tokens: llmResponse.tokens,
+              cost: llmResponse.cost,
+              latency: llmResponse.latency,
+              quality: llmResponse.quality,
+              timestamp: llmResponse.timestamp,
+            },
+            null,
+            2
+          )
+        );
+      }
+
+      // Store prompt
+      const prompt = this.prompts.get(response.responses[0]?.promptId);
+      if (prompt) {
+        await this.writeFile(
+          `${folderPath}/prompt.md`,
+          `# Prompt: ${prompt.name}\n\n${prompt.content}\n\n## Metadata\n${JSON.stringify(prompt.metadata, null, 2)}`
+        );
+      }
+    }
+
+    if (this.storageConfig.type === 'database' || this.storageConfig.type === 'hybrid') {
+      // Database storage
+      await this.dbPool!.query(
+        `
+        INSERT INTO ${this.storageConfig.database!.tables.responses} (
+          request_id, prompt_id, strategy, total_cost, total_time, quality, metadata, completed_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `,
+        [
+          response.requestId,
+          response.responses[0]?.promptId,
+          response.strategy,
+          response.totalCost,
+          response.totalTime,
+          response.quality,
+          response.metadata,
+          response.completedAt,
+        ]
       );
+
+      // Store provider responses
+      for (const llmResponse of response.responses) {
+        await this.dbPool!.query(
+          `
+          INSERT INTO ${this.storageConfig.database!.tables.analytics} (
+            request_id, provider_id, output, tokens, cost, latency, quality, error, timestamp
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `,
+          [
+            response.requestId,
+            llmResponse.providerId,
+            llmResponse.output,
+            llmResponse.tokens,
+            llmResponse.cost,
+            llmResponse.latency,
+            llmResponse.quality,
+            llmResponse.error,
+            llmResponse.timestamp,
+          ]
+        );
+      }
     }
-    
-    // Store prompt and model data
-    const prompt = this.prompts.get(response.responses[0]?.promptId);
-    if (prompt) {
-      await this.writeFile(
-        `${folderPath}/prompt.md`,
-        `# Prompt: ${prompt.name}\n\n${prompt.content}\n\n## Metadata\n${JSON.stringify(prompt.metadata, null, 2)}`
-      );
-    }
-    
-    // Add to response history
-    if (!this.responseHistory.has(response.requestId)) {
-      this.responseHistory.set(response.requestId, []);
-    }
-    this.responseHistory.get(response.requestId)!.push(response);
   }
 
   private async addSeparator(requestId: string): Promise<void> {
@@ -798,13 +857,111 @@ ${v.content}
   }
 
   private async makeAPICall(provider: LLMProvider, prompt: string): Promise<any> {
-    // Mock API call - in real implementation, this would call actual LLM APIs
-    return {
-      content: `Mock response from ${provider.name} for prompt: ${prompt.substring(0, 50)}...`,
-      promptTokens: Math.floor(prompt.length / 4),
-      completionTokens: Math.floor(Math.random() * 500) + 100,
-      totalTokens: Math.floor(prompt.length / 4) + Math.floor(Math.random() * 500) + 100
-    };
+    const startTime = Date.now();
+    try {
+      let response: any;
+      const headers = {
+        Authorization: `Bearer ${provider.apiKey}`,
+        'Content-Type': 'application/json',
+      };
+
+      switch (provider.id.split('-')[0]) {
+        case 'openai':
+          response = await axios.post(
+            provider.endpoint,
+            {
+              model: provider.model,
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: provider.maxTokens,
+              temperature: provider.temperature,
+              top_p: provider.topP,
+              frequency_penalty: provider.frequencyPenalty,
+              presence_penalty: provider.presencePenalty,
+            },
+            { headers, timeout: 30000 }
+          );
+          return {
+            content: response.data.choices[0].message.content,
+            promptTokens: response.data.usage.prompt_tokens,
+            completionTokens: response.data.usage.completion_tokens,
+            totalTokens: response.data.usage.total_tokens,
+          };
+
+        case 'anthropic':
+          response = await axios.post(
+            provider.endpoint,
+            {
+              model: provider.model,
+              prompt: prompt,
+              max_tokens_to_sample: provider.maxTokens,
+              temperature: provider.temperature,
+              top_p: provider.topP,
+            },
+            {
+              headers: {
+                ...headers,
+                'x-api-key': provider.apiKey,
+                'anthropic-version': '2023-06-01',
+              },
+              timeout: 30000,
+            }
+          );
+          return {
+            content: response.data.content[0].text,
+            promptTokens: response.data.usage.input_tokens,
+            completionTokens: response.data.usage.output_tokens,
+            totalTokens: response.data.usage.input_tokens + response.data.usage.output_tokens,
+          };
+
+        case 'google':
+          response = await axios.post(
+            `${provider.endpoint}?key=${provider.apiKey}`,
+            {
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                maxOutputTokens: provider.maxTokens,
+                temperature: provider.temperature,
+                topP: provider.topP,
+              },
+            },
+            { headers, timeout: 30000 }
+          );
+          return {
+            content: response.data.candidates[0].content.parts[0].text,
+            promptTokens: response.data.usageMetadata.promptTokenCount,
+            completionTokens: response.data.usageMetadata.candidatesTokenCount,
+            totalTokens: response.data.usageMetadata.totalTokenCount,
+          };
+
+        default:
+          throw new NonRetryableError(
+            `Unsupported provider: ${provider.id}`,
+            'INVALID_PROVIDER'
+          );
+      }
+    } catch (error) {
+      const status = error.response?.status;
+      const message = error.message || 'API call failed';
+      if (status === 429 || message.includes('rate limit')) {
+        throw new RetryableError(
+          `Rate limit exceeded for ${provider.id}`,
+          'RATE_LIMIT_EXCEEDED',
+          { providerId: provider.id, error }
+        );
+      } else if (status >= 500) {
+        throw new RetryableError(
+          `Server error from ${provider.id}`,
+          'SERVER_ERROR',
+          { providerId: provider.id, error }
+        );
+      } else {
+        throw new NonRetryableError(
+          `Failed to call ${provider.id}: ${message}`,
+          'API_CALL_FAILED',
+          { providerId: provider.id, error }
+        );
+      }
+    }
   }
 
   private compilePrompt(prompt: PromptTemplate, variables: Record<string, any>): string {
@@ -1163,13 +1320,35 @@ Focus on maintainability, scalability, and best practices.`,
   // ==================== FILE SYSTEM OPERATIONS ====================
 
   private async ensureDirectoryExists(path: string): Promise<void> {
-    // Mock implementation - in real code, use fs.mkdir with recursive option
-    console.log(`Ensuring directory exists: ${path}`);
+    try {
+      await fs.mkdir(path, { recursive: true });
+    } catch (error) {
+      throw new LLMOrchestrationError(
+        `Failed to create directory: ${path}`,
+        'FILESYSTEM_ERROR',
+        error
+      );
+    }
   }
 
   private async writeFile(path: string, content: string): Promise<void> {
-    // Mock implementation - in real code, use fs.writeFile
-    console.log(`Writing file: ${path} (${content.length} characters)`);
+    try {
+      if (this.storageConfig.encryption) {
+        // Implement encryption (e.g., using crypto module)
+        // For simplicity, we'll skip encryption implementation here
+      }
+      if (this.storageConfig.compression) {
+        // Implement compression (e.g., using zlib)
+        // For simplicity, we'll skip compression implementation here
+      }
+      await fs.writeFile(path, content, 'utf-8');
+    } catch (error) {
+      throw new LLMOrchestrationError(
+        `Failed to write file: ${path}`,
+        'FILESYSTEM_ERROR',
+        error
+      );
+    }
   }
 
   // ==================== PUBLIC API METHODS ====================

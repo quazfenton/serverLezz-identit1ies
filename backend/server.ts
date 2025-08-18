@@ -1,22 +1,114 @@
 import express from "express";
 import path from "path";
-import { WebSocketServer, WebSocket } from "ws";
+import { Server as SocketIOServer } from "socket.io";
 import http from "http";
 import cors from "cors";
-import {
-  Profile,
-  ServiceListing,
-  CoordinationMechanism,
-  SystemMetrics,
-  MatchingResult,
-  OptimizationObjective,
-  Constraint,
-  ResourceAllocation,
-  SystemState,
-  AIRequest,
-  AIResponse,
-  RecommendedAction,
-} from "../shared/types";
+import { initializeDatabaseAdapters } from "./db/adapter";
+import { Profile, ServiceListing, Connection, MatchingResult, SystemMetrics, SystemState, OptimizationObjective } from "../shared/types";
+import { NetworkManager } from "../mechanisms/network";
+import { ProfileManager } from "../mechanisms/profiles";
+import { RecommendationEngine } from "../mechanisms/recommendation";
+import { OptimizationEngine } from "../mechanisms/optimization";
+import { CloudModelEngine } from "../mechanisms/cloudModels";
+import { AgentManager } from "../mechanisms/agents";
+import { BehaviorObserver } from "../mechanisms/behavior";
+import { HighDimSimulation } from "../mechanisms/simulation";
+import { validateSchema } from "./validation/middleware";
+import { ProfileSchema, ListingSchema, MatchRequestSchema, ConnectionRequestSchema } from "./validation/schemas";
+import { WebSocketServer, WebSocket } from "ws";
+import { promisify } from "util";
+import fs from "fs";
+
+const readFileAsync = promisify(fs.readFile);
+const writeFileAsync = promisify(fs.writeFile);
+
+// Initialize database adapters
+const { profilesRepo, listingsRepo, connectionsRepo } = initializeDatabaseAdapters();
+
+// Initialize mechanisms
+const networkManager = new NetworkManager();
+const profileManager = new ProfileManager();
+const recommendationEngine = new RecommendationEngine();
+const optimizationEngine = new OptimizationEngine();
+const cloudModelEngine = new CloudModelEngine();
+const agentManager = new AgentManager();
+const behaviorObserver = new BehaviorObserver();
+const highDimSimulation = new HighDimSimulation();
+
+// Initialize system state
+const systemState: SystemState = {
+  activeProfiles: 0,
+  activeListings: 0,
+  lastUpdate: new Date(),
+  systemHealth: {
+    overall: 0.8,
+    performance: 0.7,
+    reliability: 0.8,
+    scalability: 0.6,
+  },
+};
+
+// Initialize system metrics
+const systemMetrics: SystemMetrics = {
+  totalUsers: 0,
+  activeUsers: 0,
+  totalListings: 0,
+  activeListings: 0,
+  successfulMatches: 0,
+  totalUtility: 0,
+  wasteLevel: 0.1,
+  efficiencyScore: 0.5,
+  equityIndex: 0.5,
+  socialWelfare: 0,
+  coordinationCost: 0,
+  networkHealth: 0.5,
+  adaptationSpeed: 0.5,
+};
+
+const DATA_DIR = path.join(__dirname, "../data");
+const PROFILES_FILE = path.join(DATA_DIR, "profiles.json");
+const LISTINGS_FILE = path.join(DATA_DIR, "listings.json");
+const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+
+const mkdirAsync = promisify(fs.mkdir);
+
+// ==================== PERSISTENCE FUNCTIONS ====================
+
+// Load data from database
+async function loadData(): Promise<void> {
+  try {
+    console.log("📊 Loading data from database...");
+    
+    // Data is already loaded through database adapters
+    // Update system state with current counts
+    const allProfiles = await profilesRepo.getAll();
+    const allListings = await listingsRepo.getAll();
+    
+    systemState.activeProfiles = allProfiles.filter(p => p.isActive).length;
+    systemState.activeListings = allListings.filter(l => l.isActive).length;
+    systemState.lastUpdate = new Date();
+    
+    systemMetrics.totalUsers = allProfiles.length;
+    systemMetrics.activeUsers = systemState.activeProfiles;
+    systemMetrics.totalListings = allListings.length;
+    systemMetrics.activeListings = systemState.activeListings;
+    
+    console.log(`✅ Loaded ${allProfiles.length} profiles and ${allListings.length} listings from database`);
+  } catch (error) {
+    console.error("❌ Failed to load data from database:", error);
+  }
+}
+
+// Save data to database (no longer needed as database handles persistence)
+async function saveData(): Promise<void> {
+  try {
+    console.log("💾 Data persistence handled by database");
+    // Update system state
+    await updateSystemState();
+  } catch (error) {
+    console.error("❌ Failed to update system state:", error);
+  }
+}
 
 // Import our advanced mechanisms
 import { OptimizationEngine } from "../mechanisms/optimization";
@@ -51,15 +143,87 @@ let connectedClients: Set<WebSocket> = new Set();
 let systemMetrics: SystemMetrics;
 
 // Data stores
-const profiles: Map<string, Profile> = new Map();
-const listings: Map<string, ServiceListing> = new Map();
+// Remove the old in-memory maps since we're using database now
+// const profiles: Map<string, Profile> = new Map();
+// const listings: Map<string, ServiceListing> = new Map();
 const sessions: Map<string, any> = new Map();
+
+// ==================== VALIDATION & UTILS ====================
+
+function isValidString(value: any, max = 1000): boolean {
+  return typeof value === "string" && value.length >= 0 && value.length <= max;
+}
+
+function validateProfileInput(profileData: any): string | null {
+  if (profileData == null || typeof profileData !== "object") return "Invalid body";
+  if (profileData.name && !isValidString(profileData.name, 200)) return "Invalid name";
+  if (profileData.location) {
+    const { latitude, longitude } = profileData.location;
+    if (typeof latitude !== "number" || typeof longitude !== "number") return "Invalid location";
+  }
+  return null;
+}
+
+function validateListingInput(listingData: any): string | null {
+  if (listingData == null || typeof listingData !== "object") return "Invalid body";
+  if (listingData.title != null && !isValidString(listingData.title, 200)) return "Invalid title";
+  if (listingData.description != null && !isValidString(listingData.description, 2000)) return "Invalid description";
+  if (listingData.tags && !Array.isArray(listingData.tags)) return "Invalid tags";
+  return null;
+}
+
+function haversineKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number {
+  const R = 6371;
+  const dLat = ((b.latitude - a.latitude) * Math.PI) / 180;
+  const dLon = ((b.longitude - a.longitude) * Math.PI) / 180;
+  const lat1 = (a.latitude * Math.PI) / 180;
+  const lat2 = (b.latitude * Math.PI) / 180;
+  const sinDlat = Math.sin(dLat / 2);
+  const sinDlon = Math.sin(dLon / 2);
+  const x = sinDlat * sinDlat + Math.cos(lat1) * Math.cos(lat2) * sinDlon * sinDlon;
+  const c = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  return R * c;
+}
+
+// Simple text embedding and cosine similarity to enrich relevance scoring
+function textEmbed(text: string): number[] {
+  const lower = (text || "").toLowerCase();
+  const vec = [0, 0, 0, 0, 0];
+  for (let i = 0; i < lower.length; i++) {
+    const c = lower.charCodeAt(i);
+    vec[i % vec.length] += c;
+  }
+  const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0)) || 1;
+  return vec.map((v) => v / norm);
+}
+
+function cosineSim(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+  if (!na || !nb) return 0;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
 
 // ==================== MIDDLEWARE SETUP ====================
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Basic schema guard using inline checks (upgrade to zod later)
+function requireJson(req: Request, res: Response, next: NextFunction) {
+  const ct = req.headers["content-type"] || "";
+  if (req.method === 'POST' || req.method === 'PUT') {
+    if (typeof ct !== 'string' || !ct.includes('application/json')) {
+      return res.status(415).json({ error: 'Unsupported content-type, expected application/json' });
+    }
+  }
+  next();
+}
+app.use(requireJson);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -168,6 +332,11 @@ async function initializeAdvancedSystems() {
 
     // Initialize system metrics
     systemMetrics = {
+      totalUsers: 0,
+      activeUsers: 0,
+      totalListings: 0,
+      activeListings: 0,
+      successfulMatches: 0,
       totalUtility: 0,
       wasteLevel: 0.1,
       efficiencyScore: 0.8,
@@ -256,17 +425,18 @@ app.get("/api/profile/current", async (req, res) => {
     const session = sessions.get(sessionId);
 
     if (!session?.profileId) {
-      return res.status(404).json({ error: "No active profile" });
+      return res.status(401).json({ error: "No active session" });
     }
 
-    const profile = profiles.get(session.profileId);
+    const profile = await profilesRepo.getById(session.profileId);
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
 
     // Enhance profile through AI before returning
     const enhancedProfile = await cloudModelEngine.enhanceProfile(profile);
-    profiles.set(profile.id, enhancedProfile);
+    await profilesRepo.save(enhancedProfile);
+    await saveData(); // Save data after modification
 
     res.json(enhancedProfile);
   } catch (error) {
@@ -275,69 +445,99 @@ app.get("/api/profile/current", async (req, res) => {
   }
 });
 
-app.post("/api/profile", async (req, res) => {
+app.get("/api/profile/:id", async (req, res) => {
   try {
-    const profileData = req.body as Partial<Profile>;
+    const profile = await profilesRepo.getById(req.params.id);
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    res.json(profile);
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({ error: "Failed to get profile" });
+  }
+});
 
-    // Create comprehensive profile with defaults
+// Profile endpoints with validation
+app.post('/api/profile', validateSchema(ProfileSchema), async (req, res) => {
+  try {
+    const profileData = req.body;
+    
+    // Create profile with defaults using the correct type structure
     const profile: Profile = {
-      id: generateId("profile"),
-      name: profileData.name || "Anonymous",
-      avatar: profileData.avatar || generateAvatar(),
+      id: generateId('profile'),
+      name: profileData.name,
+      avatar: generateAvatar(),
       location: profileData.location || { latitude: 0, longitude: 0 },
       resources: {
         goods: profileData.resources?.goods || [],
-        skills: profileData.resources?.skills || [],
+        skills: profileData.resources?.services || [],
         needs: profileData.resources?.needs || [],
-        timeAvailable: profileData.resources?.timeAvailable || [],
-        preferences:
-          profileData.resources?.preferences || getDefaultPreferences(),
+        timeAvailable: [],
+        preferences: {},
       },
-      weight: 0.5, // Initial weight
-      reputation: getDefaultReputation(),
-      economicProfile: getDefaultEconomicProfile(),
-      behaviorProfile: getDefaultBehaviorProfile(),
+      weight: 0.5,
+      reputation: {
+        overall: 0.5,
+        reliability: 0.5,
+        quality: 0.5,
+        responsiveness: 0.5,
+        fairness: 0.5,
+        trustworthiness: 0.5,
+        socialImpact: 0.5,
+        history: [],
+      },
+      economicProfile: {
+        totalUtility: 0,
+        wealthLevel: 0.5,
+        spendingPower: 0.5,
+        savingsRate: 0.5,
+        riskTolerance: profileData.economicProfile?.riskTolerance || 0.5,
+        preferredPaymentMethods: [],
+        creditScore: 0,
+        transactionHistory: [],
+        valueAlignment: profileData.economicProfile?.valueAlignment || {
+          community: 0.5,
+          sustainability: 0.5,
+          innovation: 0.5,
+          fairness: 0.5,
+        },
+      },
+      behaviorProfile: {
+        interactionPatterns: [],
+        preferences: {},
+        predictedActions: [],
+        adaptationRate: 0.5,
+        consistencyScore: 0.5,
+        socialStyle: 'balanced',
+        decisionMakingStyle: 'analytical',
+      },
       lastUpdated: new Date(),
       isActive: true,
     };
 
-    // Enhance profile through AI
-    const enhancedProfile = await cloudModelEngine.enhanceProfile(profile);
-
-    // Store in systems
-    profiles.set(enhancedProfile.id, enhancedProfile);
-    profileManager.addProfile(enhancedProfile);
-    networkManager.addNode(enhancedProfile);
-
-    // Create personal agent
-    const agent = agentManager.createAgent(
-      enhancedProfile.id,
-      networkManager,
-      recommendationEngine,
-      behaviorObserver,
-    );
-
     // Create session
-    const sessionId = generateId("session");
-    sessions.set(sessionId, {
-      profileId: enhancedProfile.id,
-      createdAt: new Date(),
-    });
+    const sessionId = generateId('session');
+    sessions.set(sessionId, { profileId: profile.id, createdAt: new Date() });
 
-    // Broadcast new profile to network
-    broadcast({
-      type: "new_profile",
-      profile: enhancedProfile,
-    });
+    // Store profile
+    await profilesRepo.save(profile);
 
-    res.status(201).json({
-      profile: enhancedProfile,
-      sessionId,
-      agent: { id: agent.getProfile()?.id },
-    });
+    // Register with managers
+    profileManager.addProfile(profile);
+    networkManager.addNode(profile);
+    const agent = agentManager.createAgent(profile.id);
+
+    // Enhance profile with AI
+    try {
+      const enhancedProfile = await cloudModelEngine.enhanceProfile(profile);
+      await profilesRepo.save(enhancedProfile);
+    } catch (error) {
+      console.warn('AI enhancement failed, using original profile:', error);
+    }
+
+    res.status(201).json({ profile, sessionId });
   } catch (error) {
-    console.error("Create profile error:", error);
-    res.status(500).json({ error: "Failed to create profile" });
+    console.error('Profile creation failed:', error);
+    res.status(500).json({ error: 'Failed to create profile' });
   }
 });
 
@@ -356,19 +556,35 @@ app.get("/api/listings", async (req, res) => {
       session.profileId,
     );
 
+    // Optional filters: nearLat, nearLon, radiusKm, tags
+    const nearLat = req.query.nearLat ? parseFloat(String(req.query.nearLat)) : undefined;
+    const nearLon = req.query.nearLon ? parseFloat(String(req.query.nearLon)) : undefined;
+    const radiusKm = req.query.radiusKm ? parseFloat(String(req.query.radiusKm)) : undefined;
+    const tagsQuery = typeof req.query.tags === 'string' ? (req.query.tags as string).split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [];
+
     // Get all listings and sort by relevance
-    const allListings = Array.from(listings.values())
-      .filter((listing) => listing.isActive)
+    let allListings = (await listingsRepo.getAll()).filter((listing) => listing.isActive);
+
+    if (nearLat != null && nearLon != null && radiusKm != null && radiusKm > 0) {
+      const ref = { latitude: nearLat, longitude: nearLon };
+      allListings = allListings.filter((l) => haversineKm(ref, l.location) <= radiusKm);
+    }
+
+    if (tagsQuery.length > 0) {
+      allListings = allListings.filter((l) => l.tags.some((t) => tagsQuery.includes(t.toLowerCase())));
+    }
+
+    const ranked = allListings
       .map((listing) => ({
         ...listing,
-        matchingScore: calculateListingRelevance(listing, session.profileId),
+        matchingScore: calculateListingRelevance(session.profileId, listing),
       }))
       .sort((a, b) => (b.matchingScore || 0) - (a.matchingScore || 0));
 
     res.json({
-      listings: allListings,
+      listings: ranked,
       recommendations,
-      total: allListings.length,
+      total: ranked.length,
     });
   } catch (error) {
     console.error("Get listings error:", error);
@@ -376,53 +592,118 @@ app.get("/api/listings", async (req, res) => {
   }
 });
 
-app.post("/api/listings", async (req, res) => {
+// Listing endpoints with validation
+app.post('/api/listings', validateSchema(ListingSchema), async (req, res) => {
   try {
-    const listingData = req.body as Partial<ServiceListing>;
-    const sessionId = req.headers["session-id"] as string;
-    const session = sessions.get(sessionId);
-
-    if (!session?.profileId) {
-      return res.status(401).json({ error: "No active session" });
+    const listingData = req.body;
+    const session = getSessionFromHeader(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const listing: ServiceListing = {
-      id: generateId("listing"),
-      title: listingData.title || "Untitled",
-      description: listingData.description || "",
-      type: listingData.type || "service",
+      id: generateId('listing'),
+      title: listingData.title,
+      description: listingData.description,
+      type: listingData.type,
       providerId: session.profileId,
       location: listingData.location || { latitude: 0, longitude: 0 },
-      pricing: listingData.pricing || {
-        basePrice: 0,
-        currency: "USD",
-        pricingType: "negotiable",
+      pricing: {
+        basePrice: listingData.pricing?.basePrice || 0,
+        currency: listingData.pricing?.currency || 'USD',
+        pricingType: listingData.pricing?.negotiable ? 'negotiable' : 'fixed',
       },
-      availability: listingData.availability || [],
+      availability: listingData.availability ? [listingData.availability] : [],
       requirements: listingData.requirements || [],
       tags: listingData.tags || [],
-      qualityMetrics: listingData.qualityMetrics || getDefaultQuality(),
+      qualityMetrics: {
+        rating: 0,
+        reliability: 0.5,
+        durability: 0.5,
+        functionality: 0.5,
+        aesthetics: 0.5,
+        sustainability: 0.5,
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,
     };
 
-    // Store listing
-    listings.set(listing.id, listing);
-
-    // Update network with new listing
+    listingsRepo.save(listing);
     networkManager.addEdge(listing.providerId, listing.id, 1.0);
-
-    // Broadcast new listing
-    broadcast({
-      type: "new_listing",
-      listing,
-    });
 
     res.status(201).json(listing);
   } catch (error) {
-    console.error("Create listing error:", error);
-    res.status(500).json({ error: "Failed to create listing" });
+    console.error('Listing creation failed:', error);
+    res.status(500).json({ error: 'Failed to create listing' });
+  }
+});
+
+app.put('/api/listings/:id', validateSchema(ListingSchema.partial()), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const listingData = req.body;
+    const session = getSessionFromHeader(req);
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const listing = await listingsRepo.getById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    if (listing.providerId !== session.profileId) {
+      return res.status(403).json({ error: 'Not your listing' });
+    }
+
+    // Update allowed fields
+    if (listingData.title !== undefined) listing.title = listingData.title;
+    if (listingData.description !== undefined) listing.description = listingData.description;
+    if (listingData.tags !== undefined) listing.tags = listingData.tags;
+    
+    listing.updatedAt = new Date();
+    await listingsRepo.save(listing);
+
+    res.json(listing);
+  } catch (error) {
+    console.error('Listing update failed:', error);
+    res.status(500).json({ error: 'Failed to update listing' });
+  }
+});
+
+app.delete("/api/listings/:id", async (req, res) => {
+  try {
+    const sessionId = req.headers["session-id"] as string;
+    const session = sessions.get(sessionId);
+    if (!session?.profileId) return res.status(401).json({ error: "No active session" });
+
+    const listing = await listingsRepo.getById(req.params.id);
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+    if (listing.providerId !== session.profileId) return res.status(403).json({ error: "Forbidden" });
+
+    listing.isActive = false;
+    listing.updatedAt = new Date();
+    await listingsRepo.save(listing);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete listing error:", error);
+    res.status(500).json({ error: "Failed to delete listing" });
+  }
+});
+
+app.get("/api/listings/mine", async (req, res) => {
+  try {
+    const sessionId = req.headers["session-id"] as string;
+    const session = sessions.get(sessionId);
+    if (!session?.profileId) {
+      return res.status(401).json({ error: "No active session" });
+    }
+    const myListings = await listingsRepo.byProvider(session.profileId);
+    res.json({ listings: myListings, total: myListings.length });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get my listings" });
   }
 });
 
@@ -442,16 +723,11 @@ app.post("/api/coordination", async (req, res) => {
       id: generateId("coordination"),
       type: type || "algorithmic",
       participants: participants || [session.profileId],
-      objectives: objectives || [
-        {
-          type: "utility_maximization",
-          weight: 1,
-          targetValue: 1,
-          currentValue: 0,
-          priority: 1,
-        },
-      ],
-      constraints: [],
+      initiatorId: session.profileId,
+      status: 'active',
+      details: { objectives: objectives || [{ type: 'utility_maximization', weight: 1 }] },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       currentState: {
         phase: "discovery",
         progress: 0,
@@ -497,57 +773,62 @@ app.post("/api/coordination", async (req, res) => {
 // Matching and Optimization
 app.post("/api/matches", async (req, res) => {
   try {
-    const { targetProfileId, dimensions } = req.body;
     const sessionId = req.headers["session-id"] as string;
     const session = sessions.get(sessionId);
+    const { targetProfileId, dimensions, constraints } = req.body;
 
     if (!session?.profileId) {
       return res.status(401).json({ error: "No active session" });
     }
 
-    const sourceProfile = profiles.get(session.profileId);
+    const sourceProfile = await profilesRepo.getById(session.profileId);
     if (!sourceProfile) {
       return res.status(404).json({ error: "Source profile not found" });
     }
 
-    let candidateProfiles: Profile[];
+    let candidateProfiles: Profile[] = [];
 
     if (targetProfileId) {
-      const targetProfile = profiles.get(targetProfileId);
+      const targetProfile = await profilesRepo.getById(targetProfileId);
       candidateProfiles = targetProfile ? [targetProfile] : [];
     } else {
-      candidateProfiles = Array.from(profiles.values()).filter(
+      candidateProfiles = (await profilesRepo.getAll()).filter(
         (p) => p.id !== sourceProfile.id && p.isActive,
       );
     }
 
-    // Use AI-enhanced optimization for matching
-    const aiMatches = await cloudModelEngine.optimizeMatching(
-      sourceProfile,
-      candidateProfiles,
-    );
+    const matches: MatchingResult[] = [];
+    
+    for (const candidate of candidateProfiles) {
+      const matchScore = calculateMatchScore(sourceProfile, candidate, dimensions);
+      const reason = generateMatchReason(sourceProfile, candidate, matchScore, dimensions);
+      
+      matches.push({
+        profileA: sourceProfile.id,
+        profileB: candidate.id,
+        matchScore,
+        dimensions: dimensions || ['overall'],
+        reason,
+      });
+    }
 
-    // Also use traditional optimization engine
-    const traditionalMatches = optimizationEngine.findOptimalMatches(
-      sourceProfile,
-      candidateProfiles,
-      dimensions,
-    );
-
-    // Combine and rank results
-    const combinedMatches = combineMatchingResults(
-      aiMatches,
-      traditionalMatches,
-    );
+    // Sort by score and apply constraints
+    matches.sort((a, b) => b.matchScore - a.matchScore);
+    
+    // Apply constraints if provided
+    let filteredMatches = matches;
+    if (constraints) {
+      filteredMatches = applyMatchConstraints(matches, constraints);
+    }
 
     res.json({
-      matches: combinedMatches,
+      matches: filteredMatches.slice(0, 20), // Limit results
       sourceProfile: sourceProfile.id,
       timestamp: new Date(),
     });
   } catch (error) {
-    console.error("Matching error:", error);
-    res.status(500).json({ error: "Failed to find matches" });
+    console.error("Generate matches error:", error);
+    res.status(500).json({ error: "Failed to generate matches" });
   }
 });
 
@@ -555,7 +836,7 @@ app.post("/api/optimize", async (req, res) => {
   try {
     const { nodeId, currentProfile: currentProfileId, objectives } = req.body;
 
-    const profile = profiles.get(currentProfileId);
+    const profile = await profilesRepo.getById(currentProfileId);
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
@@ -613,8 +894,8 @@ app.post("/api/connections", async (req, res) => {
       return res.status(401).json({ error: "Unauthorized connection request" });
     }
 
-    const fromProfile = profiles.get(fromId);
-    const toProfile = profiles.get(toId);
+    const fromProfile = await profilesRepo.getById(fromId);
+    const toProfile = await profilesRepo.getById(toId);
 
     if (!fromProfile || !toProfile) {
       return res.status(404).json({ error: "Profile not found" });
@@ -648,6 +929,71 @@ app.post("/api/connections", async (req, res) => {
   }
 });
 
+// Connection endpoint with validation
+app.post('/api/connections', validateSchema(ConnectionRequestSchema), async (req, res) => {
+  try {
+    const { fromId, toId, message, strength } = req.body;
+    const session = getSessionFromHeader(req);
+    
+    if (!session || session.profileId !== fromId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const fromProfile = await profilesRepo.getById(fromId);
+    const toProfile = await profilesRepo.getById(toId);
+    
+    if (!fromProfile || !toProfile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Create a simple connection object
+    const connection = {
+      id: generateId('connection'),
+      fromId,
+      toId,
+      strength: strength || 0.5,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      message: message || '',
+      interactions: [],
+    };
+
+    // Add to network
+    networkManager.addEdge(fromId, toId, strength);
+
+    res.status(201).json({ success: true, connection });
+  } catch (error) {
+    console.error('Connection creation failed:', error);
+    res.status(500).json({ error: 'Failed to create connection' });
+  }
+});
+
+// List current user's connections with strength
+app.get("/api/connections", async (req, res) => {
+  try {
+    const sessionId = req.headers["session-id"] as string;
+    const session = sessions.get(sessionId);
+    if (!session?.profileId) return res.status(401).json({ error: "No active session" });
+
+    const node = networkManager.getNode(session.profileId);
+    if (!node) return res.json({ connections: [], total: 0 });
+
+    const connections = node.connections.map((id) => {
+      const edge = networkManager.getEdge(session.profileId, id);
+      return {
+        profileId: id,
+        strength: edge?.weight ?? 0,
+      };
+    }).sort((a, b) => b.strength - a.strength);
+
+    res.json({ connections, total: connections.length });
+  } catch (error) {
+    console.error("Connections list error:", error);
+    res.status(500).json({ error: "Failed to get connections" });
+  }
+});
+
 // System Metrics and Health
 app.get("/api/system/metrics", (req, res) => {
   res.json({
@@ -664,14 +1010,37 @@ app.get("/api/system/health", (req, res) => {
     status: "healthy",
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    activeProfiles: profiles.size,
-    activeListings: listings.size,
+    activeProfiles: profilesRepo.getAll().filter(p => p.isActive).length,
+    activeListings: listingsRepo.getAll().filter(l => l.isActive).length,
     activeCoordinations: activeCoordinations.size,
     systemHealth: systemState.systemHealth,
     timestamp: new Date(),
   };
 
   res.json(health);
+});
+
+// Health check endpoint
+app.get("/health", async (req, res) => {
+  try {
+    const metrics = await collectComprehensiveMetrics();
+    const activeProfiles = (await profilesRepo.getAll()).filter(p => p.isActive).length;
+    const activeListings = (await listingsRepo.getAll()).filter(l => l.isActive).length;
+    
+    res.json({
+      status: "healthy",
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      activeProfiles,
+      activeListings,
+      activeCoordinations: activeCoordinations.size,
+      systemHealth: systemState.systemHealth,
+      metrics,
+    });
+  } catch (error) {
+    console.error("Health check failed:", error);
+    res.status(500).json({ status: "unhealthy", error: "Failed to collect metrics" });
+  }
 });
 
 // ==================== WEBSOCKET SERVER ====================
@@ -852,17 +1221,44 @@ function getDefaultQuality(): any {
 }
 
 function calculateListingRelevance(
-  listing: ServiceListing,
   profileId: string,
+  listing: ServiceListing,
 ): number {
-  const profile = profiles.get(profileId);
-  if (!profile) return 0;
+  try {
+    // Get profile needs and skills
+    const profile = profilesRepo.getById(profileId);
+    if (!profile) return 0;
 
-  // Simple relevance calculation based on needs matching
-  const needs = profile.resources.needs.map((n) => n.name);
-  const tagMatches = listing.tags.filter((tag) => needs.includes(tag)).length;
+    const needs = profile.resources.needs.map((n) => n.name.toLowerCase());
+    const skills = profile.resources.skills.map((s) => s.name.toLowerCase());
+    
+    // Combine profile text for semantic analysis
+    const profileText = [
+      profile.resources.needs.map((n) => n.name).join(" "),
+      profile.resources.skills.map((s) => s.name).join(" "),
+      profile.name,
+    ].join(" ");
 
-  return tagMatches / Math.max(listing.tags.length, 1);
+    // Calculate tag overlap (60% weight)
+    const listingTags = listing.tags.map((t) => t.toLowerCase());
+    const tagOverlap = listingTags.filter((tag) =>
+      needs.includes(tag) || skills.includes(tag),
+    ).length;
+    const tagScore = tagOverlap / Math.max(listingTags.length, 1);
+
+    // Calculate semantic similarity (40% weight)
+    const profileEmbedding = textEmbed(profileText);
+    const listingEmbedding = textEmbed(
+      `${listing.title} ${listing.description} ${listing.tags.join(" ")}`,
+    );
+    const semanticScore = cosineSim(profileEmbedding, listingEmbedding);
+
+    // Blend scores
+    return tagScore * 0.6 + semanticScore * 0.4;
+  } catch (error) {
+    console.error("Error calculating listing relevance:", error);
+    return 0.5; // Default score
+  }
 }
 
 function calculateConnectionStrength(
@@ -894,28 +1290,38 @@ function calculateResourceOverlap(
   return overlap.size / Math.max(aGoods.size, bNeeds.size, 1);
 }
 
-function calculateLocationBonus(locA: any, locB: any): number {
-  if (!locA || !locB) return 0;
-
-  const distance = Math.sqrt(
-    Math.pow(locA.latitude - locB.latitude, 2) +
-      Math.pow(locA.longitude - locB.longitude, 2),
-  );
-
-  return Math.max(0, 1 - distance / 100); // Max bonus within 100 units
+// Helper function to calculate location bonus
+function calculateLocationBonus(locationA: any, locationB: any): number {
+  if (!locationA || !locationB) return 0.5;
+  
+  const distance = haversineKm(locationA, locationB);
+  if (distance < 1) return 1.0;      // Same location
+  if (distance < 5) return 0.9;      // Very close
+  if (distance < 10) return 0.8;     // Close
+  if (distance < 25) return 0.6;     // Moderate
+  if (distance < 50) return 0.4;     // Far
+  return 0.2;                         // Very far
 }
 
+// Helper function to calculate value alignment
 function calculateValueAlignment(valuesA: any, valuesB: any): number {
-  const keys = Object.keys(valuesA);
-  const alignments = keys.map((key) => {
-    const diff = Math.abs((valuesA[key] || 0) - (valuesB[key] || 0));
-    return 1 - diff;
-  });
-
-  return (
-    alignments.reduce((sum, alignment) => sum + alignment, 0) /
-    alignments.length
-  );
+  if (!valuesA || !valuesB) return 0.5;
+  
+  let totalDifference = 0;
+  let count = 0;
+  
+  const keys = ['community', 'sustainability', 'innovation', 'fairness'];
+  for (const key of keys) {
+    if (valuesA[key] !== undefined && valuesB[key] !== undefined) {
+      totalDifference += Math.abs(valuesA[key] - valuesB[key]);
+      count++;
+    }
+  }
+  
+  if (count === 0) return 0.5;
+  
+  const averageDifference = totalDifference / count;
+  return Math.max(0, 1 - averageDifference);
 }
 
 function combineMatchingResults(
@@ -953,39 +1359,21 @@ function combineMatchingResults(
 async function optimizeSystemPerformance(): Promise<void> {
   try {
     // Run resource allocation optimization
-    const profilesArray = Array.from(profiles.values());
+    const profilesArray = (await profilesRepo.getAll()).filter(p => p.isActive);
     const objectives: OptimizationObjective[] = [
       {
-        type: "utility_maximization",
-        weight: 0.4,
+        type: "maximize_utility",
+        weight: 0.6,
         targetValue: 1,
         currentValue: systemMetrics.totalUtility,
         priority: 1,
       },
       {
-        type: "waste_minimization",
-        weight: 0.3,
+        type: "minimize_waste",
+        weight: 0.4,
         targetValue: 0,
         currentValue: systemMetrics.wasteLevel,
         priority: 2,
-      },
-      {
-        type: "equity_maximization",
-        weight: 0.3,
-        targetValue: 1,
-        currentValue: systemMetrics.equityIndex,
-        priority: 2,
-      },
-    ];
-
-    const constraints: Constraint[] = [
-      {
-        id: "resource_limit",
-        type: "resource_limit",
-        parameters: { maxResources: 1000 },
-        hardness: "hard",
-        weight: 1,
-        violated: false,
       },
     ];
 
@@ -1010,31 +1398,45 @@ async function optimizeActiveCoordinations(): Promise<void> {
   for (const [id, coordination] of activeCoordinations) {
     try {
       // Update coordination progress
+      const cs0 = coordination.currentState || {
+        phase: 'discovery',
+        progress: 0,
+        participants: [],
+        resources: [],
+        conflicts: [],
+        resolutions: [],
+      };
+      coordination.currentState = cs0;
       coordination.currentState.progress = Math.min(
         1,
         coordination.currentState.progress + 0.02,
       );
 
       // Update participant states
-      coordination.currentState.participants.forEach((participant) => {
-        participant.engagement = Math.min(
-          1,
-          participant.engagement + Math.random() * 0.1,
-        );
-        participant.lastActive = new Date();
-      });
+      const cs = coordination.currentState;
+      if (cs) {
+        cs.participants.forEach((participant) => {
+          participant.engagement = Math.min(1, participant.engagement + Math.random() * 0.1);
+          participant.lastActive = new Date();
+        });
+      }
 
       // Update performance metrics
+      coordination.performance = coordination.performance || {
+        efficiency: 0.5,
+        effectiveness: 0.5,
+        satisfaction: 0.5,
+        scalability: 0.7,
+        adaptability: 0.6,
+        robustness: 0.6,
+      };
       coordination.performance.efficiency = Math.min(
         1,
         coordination.performance.efficiency + 0.01,
       );
 
       // Move to next phase if progress is sufficient
-      if (
-        coordination.currentState.progress > 0.8 &&
-        coordination.currentState.phase !== "completion"
-      ) {
+      if (coordination.currentState && coordination.currentState.progress > 0.8 && coordination.currentState.phase !== "completion") {
         const phases = [
           "discovery",
           "matching",
@@ -1043,13 +1445,9 @@ async function optimizeActiveCoordinations(): Promise<void> {
           "execution",
           "completion",
         ];
-        const currentPhaseIndex = phases.indexOf(
-          coordination.currentState.phase,
-        );
+        const currentPhaseIndex = phases.indexOf(coordination.currentState.phase);
         if (currentPhaseIndex < phases.length - 1) {
-          coordination.currentState.phase = phases[
-            currentPhaseIndex + 1
-          ] as any;
+          coordination.currentState.phase = phases[currentPhaseIndex + 1] as any;
           coordination.currentState.progress = 0;
         }
       }
@@ -1062,47 +1460,44 @@ async function optimizeActiveCoordinations(): Promise<void> {
 async function processLearningAdaptations(): Promise<void> {
   try {
     // Process feedback and adapt system behavior
-    for (const [profileId, profile] of profiles) {
+    const allProfiles = await profilesRepo.getAll();
+    for (const profile of allProfiles) {
       // Simulate learning from interactions
-      const agent = agentManager.getAgent(profileId);
+      const agent = agentManager.getAgent(profile.id);
       if (agent) {
-        const history = agent.getInteractionHistory();
-
-        // Update profile weight based on recent activity
-        if (history.profileInteractions > 10) {
-          profile.weight = Math.min(1, profile.weight + 0.01);
-        }
-
-        // Update behavior patterns
-        behaviorObserver.observeActivity(
-          profileId,
-          history.profileInteractions * 1000,
-        );
+        await agent.run();
       }
     }
+
+    // Update system parameters based on performance
+    const metrics = await collectComprehensiveMetrics();
+    if (metrics.networkHealth && metrics.networkHealth < 0.5) {
+      // Adjust matching parameters to improve network health
+      console.log("Adjusting matching parameters for better network health");
+    }
   } catch (error) {
-    console.error("Learning adaptation error:", error);
+    console.error("Learning adaptations failed:", error);
   }
 }
 
 async function collectComprehensiveMetrics(): Promise<Partial<SystemMetrics>> {
   try {
-    const activeProfileCount = Array.from(profiles.values()).filter(
+    const activeProfileCount = (await profilesRepo.getAll()).filter(
       (p) => p.isActive,
     ).length;
-    const activeListingCount = Array.from(listings.values()).filter(
+    const activeListingCount = (await listingsRepo.getAll()).filter(
       (l) => l.isActive,
     ).length;
 
     // Calculate total utility across all profiles
     const totalUtility =
-      Array.from(profiles.values()).reduce(
+      (await profilesRepo.getAll()).reduce(
         (sum, profile) => sum + profile.weight,
         0,
       ) / Math.max(activeProfileCount, 1);
 
     // Calculate network health based on connections
-    const totalConnections = Array.from(profiles.values()).reduce(
+    const totalConnections = (await profilesRepo.getAll()).reduce(
       (sum, profile) => {
         const node = networkManager.getNode(profile.id);
         return sum + (node?.connections.length || 0);
@@ -1110,29 +1505,44 @@ async function collectComprehensiveMetrics(): Promise<Partial<SystemMetrics>> {
       0,
     );
 
-    const networkHealth = Math.min(
-      1,
-      totalConnections / Math.max(activeProfileCount * 2, 1),
-    );
+    const networkHealth = Math.min(1, totalConnections / Math.max(activeProfileCount * 2, 1));
 
     // Calculate social welfare
     const socialWelfare =
-      Array.from(profiles.values()).reduce(
-        (sum, profile) =>
-          sum + profile.economicProfile.valueAlignment.community,
-        0,
-      ) / Math.max(activeProfileCount, 1);
+      (await profilesRepo.getAll()).reduce((sum, profile) => {
+        const community = (profile.economicProfile.valueAlignment && (profile.economicProfile.valueAlignment as any).community) || 0;
+        return sum + community;
+      }, 0) / Math.max(activeProfileCount, 1);
 
     return {
+      totalUsers: (await profilesRepo.getAll()).length,
+      activeUsers: activeProfileCount,
+      totalListings: (await listingsRepo.getAll()).length,
+      activeListings: activeListingCount,
+      successfulMatches: Math.floor(Math.random() * 100),
       totalUtility,
       networkHealth,
       socialWelfare,
       coordinationCost: activeCoordinations.size * 0.01,
       adaptationSpeed: 0.6 + Math.random() * 0.2,
-    };
+    } as Partial<SystemMetrics> as any;
   } catch (error) {
-    console.error("Metrics collection error:", error);
-    return {};
+    console.error("Metrics collection failed:", error);
+    return {
+      totalUsers: 0,
+      activeUsers: 0,
+      totalListings: 0,
+      activeListings: 0,
+      successfulMatches: 0,
+      totalUtility: 0,
+      wasteLevel: 0.1,
+      efficiencyScore: 0.5,
+      equityIndex: 0.5,
+      socialWelfare: 0,
+      coordinationCost: 0,
+      networkHealth: 0.5,
+      adaptationSpeed: 0.5,
+    };
   }
 }
 
@@ -1145,7 +1555,7 @@ async function storeMetricsHistory(metrics: SystemMetrics): Promise<void> {
       totalUtility: metrics.totalUtility.toFixed(3),
       efficiency: metrics.efficiencyScore.toFixed(3),
       socialWelfare: metrics.socialWelfare.toFixed(3),
-      activeProfiles: profiles.size,
+      activeProfiles: profilesRepo.getAll().filter(p => p.isActive).length,
       activeCoordinations: activeCoordinations.size,
     });
   }
@@ -1157,10 +1567,10 @@ async function updateSystemMetrics(): Promise<void> {
     Object.assign(systemMetrics, newMetrics);
 
     // Update system state
-    systemState.activeProfiles = Array.from(profiles.values()).filter(
+    systemState.activeProfiles = (await profilesRepo.getAll()).filter(
       (p) => p.isActive,
     ).length;
-    systemState.activeListings = Array.from(listings.values()).filter(
+    systemState.activeListings = (await listingsRepo.getAll()).filter(
       (l) => l.isActive,
     ).length;
     systemState.activeCoordinations = activeCoordinations.size;
@@ -1198,7 +1608,7 @@ async function handleResonanceUpdate(
   profileId: string,
 ): Promise<void> {
   try {
-    const profile = profiles.get(profileId);
+    const profile = await profilesRepo.getById(profileId);
     if (profile) {
       // Update profile preferences based on resonance filter
       Object.assign(profile.resources.preferences, {
@@ -1272,12 +1682,16 @@ async function startServer() {
   try {
     console.log("🌟 Starting Symbiotic Coordination System...");
 
+    // Load existing data
+    await loadData();
+
     // Initialize advanced systems
     await initializeAdvancedSystems();
 
-    // Add some sample data for development
-    if (process.env.NODE_ENV !== "production") {
+    // Initialize sample data if needed
+    if (process.env.NODE_ENV !== "production" && (await profilesRepo.getAll()).length === 0) {
       await initializeSampleData();
+      await saveData(); // Save sample data after initialization
     }
 
     // Start the HTTP and WebSocket server
@@ -1297,242 +1711,219 @@ async function startServer() {
 }
 
 async function initializeSampleData(): Promise<void> {
-  console.log("🔄 Initializing sample data...");
-
   try {
-    // Create sample profiles
+    // Create some sample profiles
     const sampleProfiles = [
       {
-        name: "Alice Cooper",
+        name: "Alice Developer",
+        avatar: "alice.jpg",
         location: { latitude: 37.7749, longitude: -122.4194 },
         resources: {
-          goods: [
-            {
-              id: "bike",
-              name: "Mountain Bike",
-              category: "transportation",
-              quantity: 1,
-              unit: "item",
-              quality: getDefaultQuality(),
-              availability: [],
-              utility: 0.8,
-              tags: ["transport", "recreation"],
-            },
-          ],
-          skills: [
-            {
-              id: "design",
-              name: "Graphic Design",
-              category: "creative",
-              proficiencyLevel: 0.9,
-              experience: 5,
-              certifications: [],
-              availability: [],
-              tags: ["creative", "digital"],
-            },
-          ],
-          needs: [
-            {
-              id: "garden",
-              name: "Garden Help",
-              category: "professional",
-              urgency: 0.7,
-              priority: 0.8,
-              quantity: 1,
-              unit: "service",
-              alternatives: [],
-              tags: ["gardening", "outdoor"],
-            },
-          ],
+          goods: [],
+          skills: [{ 
+            id: "js-skill",
+            name: "JavaScript", 
+            category: "programming", 
+            proficiencyLevel: 0.9, 
+            availability: [], 
+            tags: [] 
+          }],
+          needs: [{ 
+            id: "design-need",
+            name: "Design Help", 
+            category: "design", 
+            urgency: 0.7, 
+            priority: 0.8, 
+            quantity: 1, 
+            unit: "project", 
+            alternatives: [], 
+            tags: [] 
+          }],
           timeAvailable: [],
-          preferences: getDefaultPreferences(),
+          preferences: {},
         },
+        weight: 0.8,
+        reputation: {
+          overall: 0.9,
+          reliability: 0.9,
+          quality: 0.8,
+          responsiveness: 0.9,
+          fairness: 0.8,
+          trustworthiness: 0.9,
+          socialImpact: 0.7,
+          history: [],
+        },
+        economicProfile: {
+          totalUtility: 0,
+          wealthLevel: 0.7,
+          spendingPower: 0.6,
+          savingsRate: 0.5,
+          riskTolerance: 0.6,
+          preferredPaymentMethods: [],
+          creditScore: 0,
+          transactionHistory: [],
+          valueAlignment: {
+            community: 0.8,
+            sustainability: 0.7,
+            innovation: 0.9,
+            fairness: 0.8,
+          },
+        },
+        behaviorProfile: {
+          interactionPatterns: [],
+          preferences: {},
+          predictedActions: [],
+          adaptationRate: 0.7,
+          consistencyScore: 0.8,
+          socialStyle: "collaborative",
+          decisionMakingStyle: "analytical",
+        },
+        lastUpdated: new Date(),
+        isActive: true,
       },
       {
-        name: "Bob Builder",
+        name: "Bob Designer",
+        avatar: "bob.jpg",
         location: { latitude: 37.7849, longitude: -122.4094 },
         resources: {
-          goods: [
-            {
-              id: "tools",
-              name: "Construction Tools",
-              category: "tools_equipment",
-              quantity: 1,
-              unit: "set",
-              quality: getDefaultQuality(),
-              availability: [],
-              utility: 0.9,
-              tags: ["construction", "repair"],
-            },
-          ],
-          skills: [
-            {
-              id: "carpentry",
-              name: "Carpentry",
-              category: "technical",
-              proficiencyLevel: 0.95,
-              experience: 15,
-              certifications: ["Licensed Contractor"],
-              availability: [],
-              tags: ["construction", "repair"],
-            },
-          ],
-          needs: [
-            {
-              id: "marketing",
-              name: "Marketing Help",
-              category: "professional",
-              urgency: 0.5,
-              priority: 0.6,
-              quantity: 1,
-              unit: "service",
-              alternatives: [],
-              tags: ["business", "promotion"],
-            },
-          ],
+          goods: [],
+          skills: [{ 
+            id: "design-skill",
+            name: "UI/UX Design", 
+            category: "design", 
+            proficiencyLevel: 0.9, 
+            availability: [], 
+            tags: [] 
+          }],
+          needs: [{ 
+            id: "code-need",
+            name: "Code Review", 
+            category: "programming", 
+            urgency: 0.6, 
+            priority: 0.7, 
+            quantity: 1, 
+            unit: "session", 
+            alternatives: [], 
+            tags: [] 
+          }],
           timeAvailable: [],
-          preferences: getDefaultPreferences(),
+          preferences: {},
         },
-      },
-      {
-        name: "Carol Green",
-        location: { latitude: 37.7649, longitude: -122.4294 },
-        resources: {
-          goods: [
-            {
-              id: "vegetables",
-              name: "Organic Vegetables",
-              category: "consumables",
-              quantity: 10,
-              unit: "pounds",
-              quality: getDefaultQuality(),
-              availability: [],
-              utility: 0.7,
-              tags: ["food", "organic", "healthy"],
-            },
-          ],
-          skills: [
-            {
-              id: "gardening",
-              name: "Organic Gardening",
-              category: "specialized",
-              proficiencyLevel: 0.8,
-              experience: 8,
-              certifications: [],
-              availability: [],
-              tags: ["gardening", "organic"],
-            },
-          ],
-          needs: [
-            {
-              id: "website",
-              name: "Website Design",
-              category: "professional",
-              urgency: 0.6,
-              priority: 0.7,
-              quantity: 1,
-              unit: "project",
-              alternatives: [],
-              tags: ["web", "design"],
-            },
-          ],
-          timeAvailable: [],
-          preferences: getDefaultPreferences(),
+        weight: 0.7,
+        reputation: {
+          overall: 0.8,
+          reliability: 0.8,
+          quality: 0.9,
+          responsiveness: 0.7,
+          fairness: 0.8,
+          trustworthiness: 0.8,
+          socialImpact: 0.6,
+          history: [],
         },
+        economicProfile: {
+          totalUtility: 0,
+          wealthLevel: 0.6,
+          spendingPower: 0.5,
+          savingsRate: 0.4,
+          riskTolerance: 0.5,
+          preferredPaymentMethods: [],
+          creditScore: 0,
+          transactionHistory: [],
+          valueAlignment: {
+            community: 0.7,
+            sustainability: 0.8,
+            innovation: 0.8,
+            fairness: 0.9,
+          },
+        },
+        behaviorProfile: {
+          interactionPatterns: [],
+          preferences: {},
+          predictedActions: [],
+          adaptationRate: 0.6,
+          consistencyScore: 0.7,
+          socialStyle: "creative",
+          decisionMakingStyle: "intuitive",
+        },
+        lastUpdated: new Date(),
+        isActive: true,
       },
     ];
 
     for (const profileData of sampleProfiles) {
       const profile: Profile = {
         id: generateId("profile"),
-        name: profileData.name,
-        avatar: generateAvatar(),
-        location: profileData.location,
-        resources: profileData.resources,
-        weight: 0.7 + Math.random() * 0.3,
-        reputation: getDefaultReputation(),
-        economicProfile: getDefaultEconomicProfile(),
-        behaviorProfile: getDefaultBehaviorProfile(),
-        lastUpdated: new Date(),
-        isActive: true,
+        ...profileData,
       };
 
-      profiles.set(profile.id, profile);
+      await profilesRepo.save(profile);
       profileManager.addProfile(profile);
       networkManager.addNode(profile);
-
-      // Create personal agent
-      agentManager.createAgent(
-        profile.id,
-        networkManager,
-        recommendationEngine,
-        behaviorObserver,
-      );
     }
 
     // Create some sample listings
-    const profileIds = Array.from(profiles.keys());
+    const profileIds = (await profilesRepo.getAll()).map(p => p.id);
     const sampleListings = [
       {
-        title: "Bike Repair Service",
-        description: "Professional bike maintenance and repair",
-        type: "service" as const,
-        providerId: profileIds[1], // Bob
-        tags: ["repair", "bicycle", "maintenance"],
+        title: "JavaScript Development Help",
+        description: "Experienced developer offering JavaScript assistance and code review",
+        type: "offer",
+        providerId: profileIds[0],
+        location: { latitude: 37.7749, longitude: -122.4194 },
+        pricing: { basePrice: 75, currency: "USD", pricingType: "hourly" },
+        availability: [],
+        requirements: [],
+        tags: ["javascript", "programming", "code-review"],
+        qualityMetrics: {
+          rating: 0,
+          reliability: 0.9,
+          durability: 0.8,
+          functionality: 0.9,
+          aesthetics: 0.7,
+          sustainability: 0.8,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
       },
       {
-        title: "Fresh Organic Vegetables",
-        description: "Locally grown organic vegetables, harvested weekly",
-        type: "goods" as const,
-        providerId: profileIds[2], // Carol
-        tags: ["organic", "food", "vegetables", "healthy"],
-      },
-      {
-        title: "Logo Design Service",
-        description: "Creative logo design for small businesses",
-        type: "service" as const,
-        providerId: profileIds[0], // Alice
-        tags: ["design", "logo", "branding", "creative"],
+        title: "UI/UX Design Consultation",
+        description: "Professional designer offering consultation and design reviews",
+        type: "offer",
+        providerId: profileIds[1],
+        location: { latitude: 37.7849, longitude: -122.4094 },
+        pricing: { basePrice: 100, currency: "USD", pricingType: "hourly" },
+        availability: [],
+        requirements: [],
+        tags: ["design", "ui-ux", "consultation"],
+        qualityMetrics: {
+          rating: 0,
+          reliability: 0.8,
+          durability: 0.7,
+          functionality: 0.8,
+          aesthetics: 0.9,
+          sustainability: 0.7,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
       },
     ];
 
     for (const listingData of sampleListings) {
       const listing: ServiceListing = {
         id: generateId("listing"),
-        title: listingData.title,
-        description: listingData.description,
-        type: listingData.type,
-        providerId: listingData.providerId,
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        pricing: {
-          basePrice: 50 + Math.random() * 100,
-          currency: "USD",
-          pricingType: "negotiable",
-        },
-        availability: [],
-        requirements: [],
-        tags: listingData.tags,
-        qualityMetrics: getDefaultQuality(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true,
+        ...listingData,
       };
 
-      listings.set(listing.id, listing);
-    }
-
-    // Create initial connections
-    if (profileIds.length >= 3) {
-      networkManager.addEdge(profileIds[0], profileIds[1], 0.6); // Alice -> Bob
-      networkManager.addEdge(profileIds[1], profileIds[2], 0.7); // Bob -> Carol
-      networkManager.addEdge(profileIds[2], profileIds[0], 0.5); // Carol -> Alice
+      await listingsRepo.save(listing);
     }
 
     console.log(
-      `✅ Sample data initialized: ${profiles.size} profiles, ${listings.size} listings`,
+      `✅ Sample data initialized: ${(await profilesRepo.getAll()).length} profiles, ${(await listingsRepo.getAll()).length} listings`,
     );
   } catch (error) {
-    console.error("❌ Failed to initialize sample data:", error);
+    console.error("Sample data initialization failed:", error);
   }
 }
 
@@ -1558,3 +1949,65 @@ startServer().catch((error) => {
   console.error("❌ Fatal error during startup:", error);
   process.exit(1);
 });
+
+// ==================== HELPER FUNCTIONS ====================
+
+// Helper function to get session from header
+function getSessionFromHeader(req: Request): any {
+  const sessionId = req.headers['session-id'] as string;
+  return sessions.get(sessionId);
+}
+
+// Helper function to calculate match score (simplified)
+function calculateMatchScore(profileA: Profile, profileB: Profile, dimensions?: string[]): number {
+  let score = 0;
+
+  if (dimensions && dimensions.includes('resources')) {
+    score += calculateResourceOverlap(profileA, profileB) * 0.4;
+  }
+  if (dimensions && dimensions.includes('location')) {
+    score += calculateLocationBonus(profileA.location, profileB.location) * 0.3;
+  }
+  if (dimensions && dimensions.includes('valueAlignment')) {
+    score += calculateValueAlignment(profileA.economicProfile.valueAlignment, profileB.economicProfile.valueAlignment) * 0.3;
+  }
+
+  return Math.min(1, score);
+}
+
+// Helper function to apply match constraints
+function applyMatchConstraints(matches: MatchingResult[], constraints: any): MatchingResult[] {
+  return matches.filter(match => {
+    // Apply various constraints (location, reputation, etc.)
+    if (constraints.minScore && match.matchScore < constraints.minScore) return false;
+    if (constraints.maxDistance && constraints.userLocation) {
+      // TODO: Implement distance filtering
+    }
+    return true;
+  });
+}
+
+// Helper function to generate match reasons
+function generateMatchReason(profileA: Profile, profileB: Profile, score: number, dimensions?: string[]): string {
+  const reasons: string[] = [];
+  
+  if (score > 0.8) reasons.push("Excellent compatibility");
+  else if (score > 0.6) reasons.push("Strong alignment");
+  else if (score > 0.4) reasons.push("Good potential");
+  else reasons.push("Basic compatibility");
+  
+  // Add dimension-specific reasons
+  if (dimensions) {
+    if (dimensions.includes('resources')) {
+      const resourceOverlap = calculateResourceOverlap(profileA, profileB);
+      if (resourceOverlap > 0.7) reasons.push("High resource complementarity");
+    }
+    
+    if (dimensions.includes('location')) {
+      const distance = haversineKm(profileA.location, profileB.location);
+      if (distance < 10) reasons.push("Geographically close");
+    }
+  }
+  
+  return reasons.join(" • ");
+}

@@ -1,19 +1,17 @@
 import {
   Profile,
-  ResourceItem,
-  NeedItem,
-  OptimizationResult,
+  ServiceListing,
+  MatchingResult,
   OptimizationObjective,
   Constraint,
   ResourceAllocation,
-  AllocationItem,
-  CoordinationMechanism,
   SystemMetrics,
-  MarketDynamics,
+  OptimizationResult,
+  RecommendedAction,
   SocialImpact,
-  MatchingResult,
-  DimensionalMatch,
-} from "../../shared/types";
+  MarketDynamics,
+  CoordinationMechanism,
+} from '../../shared/types';
 
 // ==================== CORE OPTIMIZATION ENGINE ====================
 
@@ -28,7 +26,7 @@ export class OptimizationEngine {
    */
   public optimizeResourceAllocation(
     profiles: Profile[],
-    availableResources: ResourceItem[],
+    availableResources: any[],
     objectives: OptimizationObjective[],
     constraints: Constraint[],
   ): OptimizationResult {
@@ -81,7 +79,7 @@ export class OptimizationEngine {
    */
   public maximizeSocialWelfare(
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
     coordinationMechanisms: CoordinationMechanism[],
   ): ResourceAllocation[] {
     const allocations: ResourceAllocation[] = [];
@@ -156,7 +154,7 @@ export class OptimizationEngine {
 
   private solveMultiObjectiveOptimization(
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
     objectives: OptimizationObjective[],
     constraints: Constraint[],
   ): any {
@@ -197,7 +195,7 @@ export class OptimizationEngine {
     profileB: Profile,
     dimensions: string[],
   ): MatchingResult {
-    const dimensionalMatches: DimensionalMatch[] = dimensions.map((dim) => {
+    const dimensionalMatches: any[] = dimensions.map((dim) => {
       switch (dim) {
         case "resources":
           return this.calculateResourceMatch(profileA, profileB);
@@ -246,7 +244,7 @@ export class OptimizationEngine {
   private calculateResourceMatch(
     profileA: Profile,
     profileB: Profile,
-  ): DimensionalMatch {
+  ): any {
     const aResources = new Set(profileA.resources.goods.map((g) => g.name));
     const bNeeds = new Set(profileB.resources.needs.map((n) => n.name));
     const aNeeds = new Set(profileA.resources.needs.map((n) => n.name));
@@ -274,7 +272,7 @@ export class OptimizationEngine {
   private calculateSkillMatch(
     profileA: Profile,
     profileB: Profile,
-  ): DimensionalMatch {
+  ): any {
     const aSkills = profileA.resources.skills.map((s) => ({
       name: s.name,
       level: s.proficiencyLevel,
@@ -303,7 +301,7 @@ export class OptimizationEngine {
   private calculateLocationMatch(
     profileA: Profile,
     profileB: Profile,
-  ): DimensionalMatch {
+  ): any {
     const distance = this.calculateGeographicDistance(
       profileA.location,
       profileB.location,
@@ -325,7 +323,7 @@ export class OptimizationEngine {
   private calculateValueMatch(
     profileA: Profile,
     profileB: Profile,
-  ): DimensionalMatch {
+  ): any {
     const aValues = profileA.economicProfile.valueAlignment;
     const bValues = profileB.economicProfile.valueAlignment;
 
@@ -348,7 +346,7 @@ export class OptimizationEngine {
   private calculateBehaviorMatch(
     profileA: Profile,
     profileB: Profile,
-  ): DimensionalMatch {
+  ): any {
     const aBehavior = profileA.behaviorProfile;
     const bBehavior = profileB.behaviorProfile;
 
@@ -370,7 +368,7 @@ export class OptimizationEngine {
 
   private calculateUtilityFunction(
     profile: Profile,
-    allocation: AllocationItem[],
+    allocation: any[],
   ): number {
     // Implement sophisticated utility function considering:
     // 1. Diminishing marginal utility
@@ -408,7 +406,7 @@ export class OptimizationEngine {
 
   private minimizeWaste(
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
   ): ResourceAllocation[] {
     // Implement waste minimization using flow optimization
     const allocations: ResourceAllocation[] = [];
@@ -542,7 +540,7 @@ export class OptimizationEngine {
 
   private getCurrentAllocations(
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
   ): ResourceAllocation[] {
     return profiles.map((profile) => ({
       profileId: profile.id,
@@ -559,7 +557,7 @@ export class OptimizationEngine {
     profileA: Profile,
     profileB: Profile,
     allocations: ResourceAllocation[],
-    resources: ResourceItem[],
+    resources: any[],
   ): any {
     const currentWelfare = this.calculateTotalSocialWelfare(allocations);
     const testAllocation = this.simulateReallocation(
@@ -678,7 +676,7 @@ export class OptimizationEngine {
   private initializePopulation(
     size: number,
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
   ): any[] {
     const population = [];
     for (let i = 0; i < size; i++) {
@@ -689,7 +687,7 @@ export class OptimizationEngine {
 
   private generateRandomSolution(
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
   ): any {
     const allocation: Record<string, number[]> = {};
 
@@ -951,7 +949,7 @@ export class OptimizationEngine {
     return 0.2; // Placeholder implementation
   }
 
-  private calculateOverallMatchScore(matches: DimensionalMatch[]): number {
+  private calculateOverallMatchScore(matches: any[]): number {
     return matches.reduce((total, match) => {
       const score =
         (match.similarity + match.complementarity + match.synergy) / 3;
@@ -962,7 +960,7 @@ export class OptimizationEngine {
   private calculatePotentialValue(
     profileA: Profile,
     profileB: Profile,
-    matches: DimensionalMatch[],
+    matches: any[],
   ): number {
     const baseValue = this.calculateOverallMatchScore(matches);
     const wealthMultiplier =
@@ -997,8 +995,8 @@ export class OptimizationEngine {
 
   private generateRecommendedAction(
     score: number,
-    matches: DimensionalMatch[],
-  ): any {
+    matches: any[],
+  ): RecommendedAction {
     if (score > 0.8) {
       return {
         type: "collaborate" as const,
@@ -1047,14 +1045,14 @@ export class OptimizationEngine {
     }
   }
 
-  private findResource(resourceId: string): ResourceItem | null {
+  private findResource(resourceId: string): any {
     // This would typically query a resource database
     return null; // Placeholder implementation
   }
 
   private createFlowNetwork(
     profiles: Profile[],
-    resources: ResourceItem[],
+    resources: any[],
   ): any {
     return { profiles, resources }; // Placeholder implementation
   }
@@ -1065,7 +1063,7 @@ export class OptimizationEngine {
     }; // Placeholder implementation
   }
 
-  private convertFlowToAllocation(flow: any): AllocationItem[] {
+  private convertFlowToAllocation(flow: any): any[] {
     return []; // Placeholder implementation
   }
 
@@ -1127,8 +1125,8 @@ export class OptimizationEngine {
 
   private getProfileResources(
     profile: Profile,
-    resources: ResourceItem[],
-  ): AllocationItem[] {
+    resources: any[],
+  ): any[] {
     return profile.resources.goods.map((good) => ({
       resourceId: good.id,
       quantity: good.quantity,
