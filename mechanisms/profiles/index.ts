@@ -1,27 +1,29 @@
 import { Profile } from '../../shared/types';
+import { ProfilesRepo } from '../../backend/repos'; // Assuming ProfilesRepo is available here
 
 export class ProfileManager {
-  private profiles: Map<string, Profile>;
-  private weightHistory: Map<string, number[]>;
+  private profilesRepo: ProfilesRepo;
 
-  constructor() {
-    this.profiles = new Map();
-    this.weightHistory = new Map();
+  constructor(profilesRepo: ProfilesRepo) {
+    this.profilesRepo = profilesRepo;
   }
 
-  public addProfile(profile: Profile): void {
-    this.profiles.set(profile.id, profile);
-    this.weightHistory.set(profile.id, [profile.weight]);
+  public async addProfile(profile: Profile): Promise<void> {
+    // Initialize weightHistory for new profiles
+    if (!profile.weightHistory) {
+      profile.weightHistory = [profile.weight];
+    }
+    await this.profilesRepo.save(profile);
   }
 
-  public updateProfileWeights(behaviorData: {
+  public async updateProfileWeights(behaviorData: {
     profileId: string;
     interactions: number;
     positiveFeedback: number;
     negativeFeedback: number;
     timeActive: number;
-  }): void {
-    const profile = this.profiles.get(behaviorData.profileId);
+  }): Promise<void> {
+    const profile = await this.profilesRepo.getById(behaviorData.profileId);
     if (!profile) return;
 
     // Calculate new weight based on behavior
@@ -40,27 +42,32 @@ export class ProfileManager {
 
     // Update profile and store weight history
     profile.weight = newWeight;
-    this.weightHistory.get(profile.id)?.push(newWeight);
+    if (!profile.weightHistory) {
+      profile.weightHistory = [];
+    }
+    profile.weightHistory.push(newWeight);
 
     // Apply weight decay based on historical trends
-    const weights = this.weightHistory.get(profile.id) || [];
+    const weights = profile.weightHistory || [];
     if (weights.length > 10) {
       const trend = weights
         .slice(-10)
         .reduce((sum, weight) => sum + weight, 0) / 10;
       profile.weight = Math.max(0.1, trend * 0.9);
     }
+    await this.profilesRepo.save(profile);
   }
 
-  public getProfile(id: string): Profile | undefined {
-    return this.profiles.get(id);
+  public async getProfile(id: string): Promise<Profile | undefined> {
+    return this.profilesRepo.getById(id);
   }
 
-  public getProfiles(): Map<string, Profile> {
-    return this.profiles;
+  public async getProfiles(): Promise<Profile[]> {
+    return this.profilesRepo.getAll();
   }
 
-  public getWeightTrend(id: string): number[] {
-    return this.weightHistory.get(id) || [];
+  public async getWeightTrend(id: string): Promise<number[]> {
+    const profile = await this.profilesRepo.getById(id);
+    return profile?.weightHistory || [];
   }
 }

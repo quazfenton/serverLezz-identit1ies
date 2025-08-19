@@ -11,21 +11,42 @@ import {
 export class CloudModelEngine {
   constructor() {}
 
+  private async mockLLMCall(prompt: string): Promise<any> {
+    console.log(`[CloudModelEngine] Mock LLM Call with prompt: "${prompt.substring(0, 100)}..."`);
+    // Simulate network latency
+    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 400));
+
+    if (prompt.includes("enhance profile")) {
+        return {
+            socialStyle: ["collaborative", "analytical", "creative", "expressive"][Math.floor(Math.random() * 4)],
+            decisionMakingStyle: ["intuitive", "data-driven", "cautious"][Math.floor(Math.random() * 3)],
+            predictedActions: ["seek_knowledge", "offer_skill", "join_project"],
+        };
+    }
+
+    if (prompt.includes("optimize matching")) {
+        return {
+            matchScore: Math.random() * 0.5 + 0.3, // Return a score between 0.3 and 0.8
+        };
+    }
+
+    return {};
+  }
+
   public async enhanceProfile(profile: Profile): Promise<Profile> {
     const enhanced = { ...profile };
+    const prompt = `enhance profile for user ${profile.id} with name ${profile.name}`;
+    const llmResponse = await this.mockLLMCall(prompt);
+
     enhanced.weight = Math.min(1, (enhanced.weight ?? 0.5) * 1.01);
     enhanced.lastUpdated = new Date();
     if (!enhanced.behaviorProfile) {
-      enhanced.behaviorProfile = {
-        interactionPatterns: [],
-        preferences: {},
-        predictedActions: [],
-        adaptationRate: 0.5,
-        consistencyScore: 0.7,
-        socialStyle: "collaborative",
-        decisionMakingStyle: "analytical",
-      } as BehaviorProfile;
+      enhanced.behaviorProfile = {} as BehaviorProfile;
     }
+    enhanced.behaviorProfile.socialStyle = llmResponse.socialStyle || enhanced.behaviorProfile.socialStyle;
+    enhanced.behaviorProfile.decisionMakingStyle = llmResponse.decisionMakingStyle || enhanced.behaviorProfile.decisionMakingStyle;
+    enhanced.behaviorProfile.predictedActions = llmResponse.predictedActions || enhanced.behaviorProfile.predictedActions;
+    
     return enhanced;
   }
 
@@ -33,19 +54,22 @@ export class CloudModelEngine {
     sourceProfile: Profile,
     candidateProfiles: Profile[],
   ): Promise<MatchingResult[]> {
-    const sourceNeeds = new Set(sourceProfile.resources.needs.map((n) => n.name));
-    return candidateProfiles
-      .filter((c) => c.id !== sourceProfile.id)
-      .map((candidate) => {
-        const goods = new Set(candidate.resources.goods.map((g) => g.name));
-        const overlap = [...sourceNeeds].filter((n) => goods.has(n)).length;
-        const score = Math.min(1, overlap / Math.max(1, sourceNeeds.size));
-        return {
-          profileA: sourceProfile.id,
-          profileB: candidate.id,
-          matchScore: score,
-        } as MatchingResult;
-      })
+    const matches: MatchingResult[] = [];
+
+    for (const candidate of candidateProfiles) {
+        if (candidate.id === sourceProfile.id) continue;
+
+        const prompt = `optimize matching between ${sourceProfile.id} and ${candidate.id}`;
+        const llmResponse = await this.mockLLMCall(prompt);
+
+        matches.push({
+            profileA: sourceProfile.id,
+            profileB: candidate.id,
+            matchScore: llmResponse.matchScore || 0,
+        } as MatchingResult);
+    }
+
+    return matches
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, 20);
   }

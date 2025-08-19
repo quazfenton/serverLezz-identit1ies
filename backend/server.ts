@@ -31,7 +31,6 @@ const profileManager = new ProfileManager();
 const recommendationEngine = new RecommendationEngine();
 const optimizationEngine = new OptimizationEngine();
 const cloudModelEngine = new CloudModelEngine();
-const agentManager = new AgentManager();
 const behaviorObserver = new BehaviorObserver();
 const highDimSimulation = new HighDimSimulation();
 
@@ -254,21 +253,22 @@ async function initializeAdvancedSystems() {
   try {
     // Initialize core components
     networkManager = new NetworkManager();
-    profileManager = new ProfileManager();
+    profileManager = new ProfileManager(profilesRepo);
     behaviorObserver = new BehaviorObserver(profileManager);
     recommendationEngine = new RecommendationEngine(
       networkManager,
       behaviorObserver,
+      listingsRepo
     );
     optimizationEngine = new OptimizationEngine();
     cloudModelEngine = new CloudModelEngine();
-    agentManager = new AgentManager();
+    agentManager = new AgentManager(listingsRepo, profilesRepo, harmonizationEngine);
 
     // Initialize simulation
     simulation = new HighDimSimulation(
       networkManager,
       profileManager,
-      [], // Cloud models will be added dynamically
+      [cloudModelEngine], // Cloud models will be added dynamically
     );
 
     // Initialize system state
@@ -524,7 +524,7 @@ app.post('/api/profile', validateSchema(ProfileSchema), async (req, res) => {
     // Register with managers
     profileManager.addProfile(profile);
     networkManager.addNode(profile);
-    const agent = agentManager.createAgent(profile.id);
+    const agent = agentManager.createAgent(profile);
 
     // Enhance profile with AI
     try {
@@ -771,6 +771,10 @@ app.post("/api/coordination", async (req, res) => {
 });
 
 // Matching and Optimization
+import { HarmonizationEngine } from "../mechanisms/matching/HarmonizationEngine";
+
+const harmonizationEngine = new HarmonizationEngine();
+
 app.post("/api/matches", async (req, res) => {
   try {
     const sessionId = req.headers["session-id"] as string;
@@ -797,28 +801,19 @@ app.post("/api/matches", async (req, res) => {
       );
     }
 
-    const matches: MatchingResult[] = [];
-    
-    for (const candidate of candidateProfiles) {
-      const matchScore = calculateMatchScore(sourceProfile, candidate, dimensions);
-      const reason = generateMatchReason(sourceProfile, candidate, matchScore, dimensions);
-      
-      matches.push({
-        profileA: sourceProfile.id,
-        profileB: candidate.id,
-        matchScore,
-        dimensions: dimensions || ['overall'],
-        reason,
-      });
-    }
+    const allUsers = (await profilesRepo.getAll()).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+    }, {} as { [key: string]: Profile });
 
-    // Sort by score and apply constraints
-    matches.sort((a, b) => b.matchScore - a.matchScore);
-    
+    const matches = harmonizationEngine.findOptimalMatches(sourceProfile, candidateProfiles, allUsers, new Date());
+
     // Apply constraints if provided
     let filteredMatches = matches;
     if (constraints) {
-      filteredMatches = applyMatchConstraints(matches, constraints);
+      if (constraints.minScore) {
+        filteredMatches = filteredMatches.filter(m => m.score >= constraints.minScore);
+      }
     }
 
     res.json({
@@ -884,90 +879,10 @@ app.post("/api/optimize", async (req, res) => {
 });
 
 // Connection Management
-app.post("/api/connections", async (req, res) => {
-  try {
-    const { fromId, toId } = req.body;
-    const sessionId = req.headers["session-id"] as string;
-    const session = sessions.get(sessionId);
 
-    if (!session?.profileId || session.profileId !== fromId) {
-      return res.status(401).json({ error: "Unauthorized connection request" });
-    }
-
-    const fromProfile = await profilesRepo.getById(fromId);
-    const toProfile = await profilesRepo.getById(toId);
-
-    if (!fromProfile || !toProfile) {
-      return res.status(404).json({ error: "Profile not found" });
-    }
-
-    // Calculate connection strength
-    const strength = calculateConnectionStrength(fromProfile, toProfile);
-
-    // Add edge to network
-    networkManager.addEdge(fromId, toId, strength);
-
-    // Record behavior observation
-    behaviorObserver.observeInteraction(fromId, "message", "positive");
-    behaviorObserver.observeInteraction(toId, "message", "positive");
-
-    // Broadcast connection
-    broadcast({
-      type: "connection_established",
-      from: fromId,
-      to: toId,
-      strength,
-    });
-
-    res.json({
-      success: true,
-      connection: { from: fromId, to: toId, strength },
-    });
-  } catch (error) {
-    console.error("Connection error:", error);
-    res.status(500).json({ error: "Failed to create connection" });
-  }
-});
 
 // Connection endpoint with validation
-app.post('/api/connections', validateSchema(ConnectionRequestSchema), async (req, res) => {
-  try {
-    const { fromId, toId, message, strength } = req.body;
-    const session = getSessionFromHeader(req);
-    
-    if (!session || session.profileId !== fromId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
 
-    const fromProfile = await profilesRepo.getById(fromId);
-    const toProfile = await profilesRepo.getById(toId);
-    
-    if (!fromProfile || !toProfile) {
-      return res.status(404).json({ error: 'Profile not found' });
-    }
-
-    // Create a simple connection object
-    const connection = {
-      id: generateId('connection'),
-      fromId,
-      toId,
-      strength: strength || 0.5,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      message: message || '',
-      interactions: [],
-    };
-
-    // Add to network
-    networkManager.addEdge(fromId, toId, strength);
-
-    res.status(201).json({ success: true, connection });
-  } catch (error) {
-    console.error('Connection creation failed:', error);
-    res.status(500).json({ error: 'Failed to create connection' });
-  }
-});
 
 // List current user's connections with strength
 app.get("/api/connections", async (req, res) => {
@@ -991,6 +906,45 @@ app.get("/api/connections", async (req, res) => {
   } catch (error) {
     console.error("Connections list error:", error);
     res.status(500).json({ error: "Failed to get connections" });
+  }
+});
+
+// Connection endpoint with validation
+app.post('/api/connections', validateSchema(ConnectionRequestSchema), async (req, res) => {
+  try {
+    const { targetProfileId, connectionType } = req.body;
+    const session = getSessionFromHeader(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const sourceProfile = await profilesRepo.getById(session.profileId);
+    const targetProfile = await profilesRepo.getById(targetProfileId);
+
+    if (!sourceProfile || !targetProfile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Create connection
+    const connection: Connection = {
+      id: generateId('connection'),
+      profileA: sourceProfile.id,
+      profileB: targetProfile.id,
+      strength: 0.5, // Initial strength
+      type: connectionType || 'social',
+      history: [],
+      lastInteraction: new Date(),
+    };
+
+    await connectionsRepo.save(connection);
+
+    // Update network manager
+    networkManager.addEdge(sourceProfile.id, targetProfile.id, connection.strength);
+
+    res.status(201).json(connection);
+  } catch (error) {
+    console.error('Connection creation failed:', error);
+    res.status(500).json({ error: 'Failed to create connection' });
   }
 });
 
@@ -1958,56 +1912,4 @@ function getSessionFromHeader(req: Request): any {
   return sessions.get(sessionId);
 }
 
-// Helper function to calculate match score (simplified)
-function calculateMatchScore(profileA: Profile, profileB: Profile, dimensions?: string[]): number {
-  let score = 0;
 
-  if (dimensions && dimensions.includes('resources')) {
-    score += calculateResourceOverlap(profileA, profileB) * 0.4;
-  }
-  if (dimensions && dimensions.includes('location')) {
-    score += calculateLocationBonus(profileA.location, profileB.location) * 0.3;
-  }
-  if (dimensions && dimensions.includes('valueAlignment')) {
-    score += calculateValueAlignment(profileA.economicProfile.valueAlignment, profileB.economicProfile.valueAlignment) * 0.3;
-  }
-
-  return Math.min(1, score);
-}
-
-// Helper function to apply match constraints
-function applyMatchConstraints(matches: MatchingResult[], constraints: any): MatchingResult[] {
-  return matches.filter(match => {
-    // Apply various constraints (location, reputation, etc.)
-    if (constraints.minScore && match.matchScore < constraints.minScore) return false;
-    if (constraints.maxDistance && constraints.userLocation) {
-      // TODO: Implement distance filtering
-    }
-    return true;
-  });
-}
-
-// Helper function to generate match reasons
-function generateMatchReason(profileA: Profile, profileB: Profile, score: number, dimensions?: string[]): string {
-  const reasons: string[] = [];
-  
-  if (score > 0.8) reasons.push("Excellent compatibility");
-  else if (score > 0.6) reasons.push("Strong alignment");
-  else if (score > 0.4) reasons.push("Good potential");
-  else reasons.push("Basic compatibility");
-  
-  // Add dimension-specific reasons
-  if (dimensions) {
-    if (dimensions.includes('resources')) {
-      const resourceOverlap = calculateResourceOverlap(profileA, profileB);
-      if (resourceOverlap > 0.7) reasons.push("High resource complementarity");
-    }
-    
-    if (dimensions.includes('location')) {
-      const distance = haversineKm(profileA.location, profileB.location);
-      if (distance < 10) reasons.push("Geographically close");
-    }
-  }
-  
-  return reasons.join(" • ");
-}
