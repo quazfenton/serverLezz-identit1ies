@@ -4,7 +4,7 @@ import { Server as SocketIOServer } from "socket.io";
 import http from "http";
 import cors from "cors";
 import { initializeDatabaseAdapters } from "./db/adapter";
-import { Profile, ServiceListing, Connection, MatchingResult, SystemMetrics, SystemState, OptimizationObjective } from "../shared/types";
+import { Profile, ServiceListing, Connection, MatchingResult, SystemMetrics, SystemState, OptimizationObjective, CoordinationMechanism } from "../shared/types";
 import { NetworkManager } from "../mechanisms/network";
 import { ProfileManager } from "../mechanisms/profiles";
 import { RecommendationEngine } from "../mechanisms/recommendation";
@@ -13,6 +13,8 @@ import { CloudModelEngine } from "../mechanisms/cloudModels";
 import { AgentManager } from "../mechanisms/agents";
 import { BehaviorObserver } from "../mechanisms/behavior";
 import { HighDimSimulation } from "../mechanisms/simulation";
+import { HarmonizationEngine } from "../mechanisms/matching/HarmonizationEngine";
+import n8nIntegration from "./n8n-integration";
 import { validateSchema } from "./validation/middleware";
 import { ProfileSchema, ListingSchema, MatchRequestSchema, ConnectionRequestSchema } from "./validation/schemas";
 import { WebSocketServer, WebSocket } from "ws";
@@ -211,6 +213,9 @@ function cosineSim(a: number[], b: number[]): number {
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// n8n integration endpoints
+app.use('/n8n', n8nIntegration);
 
 // Basic schema guard using inline checks (upgrade to zod later)
 function requireJson(req: Request, res: Response, next: NextFunction) {
@@ -771,8 +776,6 @@ app.post("/api/coordination", async (req, res) => {
 });
 
 // Matching and Optimization
-import { HarmonizationEngine } from "../mechanisms/matching/HarmonizationEngine";
-
 const harmonizationEngine = new HarmonizationEngine();
 
 app.post("/api/matches", async (req, res) => {

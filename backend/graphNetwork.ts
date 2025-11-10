@@ -6,6 +6,7 @@ export const createGraphNetwork = () => {
 
   const addNode = (profile: Profile) => {
     const node: GraphNode = {
+      id: profile.id,
       profile,
       connections: [],
       weight: 1,
@@ -24,6 +25,7 @@ export const createGraphNetwork = () => {
       edge.lastUsed = new Date();
     } else {
       edges.push({
+        id: `${source}-${target}-${Date.now()}`,
         source,
         target,
         weight,
@@ -36,7 +38,7 @@ export const createGraphNetwork = () => {
     // Find potential matches and update graph weights
     Object.values(nodes).forEach((node) => {
       if (node.profile.resources.needs.some(need => 
-        listing.tags.includes(need)
+        listing.tags.includes(need.name)
       )) {
         addEdge(listing.providerId, node.profile.id, 1);
       }

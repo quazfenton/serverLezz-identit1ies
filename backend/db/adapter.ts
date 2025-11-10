@@ -255,10 +255,10 @@ export class DatabaseConnectionsRepo {
     try {
       const dbConnection = await prisma.connection.create({
         data: {
-          fromId: connection.fromProfileId,
-          toId: connection.toProfileId,
+          fromId: connection.profileA,  // Map profileA to fromId
+          toId: connection.profileB,    // Map profileB to toId
           strength: connection.strength,
-          status: connection.status,
+          status: connection.status || 'active',
         },
       });
 
@@ -290,11 +290,17 @@ export class DatabaseConnectionsRepo {
   private mapDbConnectionToConnection(dbConnection: any): Connection {
     return {
       id: dbConnection.id,
+      profileA: dbConnection.fromId,
+      profileB: dbConnection.toId,
+      strength: dbConnection.strength,
+      type: dbConnection.type || 'social',
+      history: dbConnection.history || [],
+      lastInteraction: new Date(dbConnection.updatedAt || Date.now()),
+      // Map database fields to optional Connection interface fields
       fromProfileId: dbConnection.fromId,
       toProfileId: dbConnection.toId,
-      strength: dbConnection.strength,
       status: dbConnection.status,
-      lastUsed: dbConnection.updatedAt.getTime(),
+      lastUsed: new Date(dbConnection.updatedAt || Date.now()),
     };
   }
 }

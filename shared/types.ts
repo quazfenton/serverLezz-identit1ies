@@ -43,6 +43,97 @@ export interface Location {
     address?: string;
 }
 
+// ==================== NODAL AGENT RELATED TYPES ====================
+
+type ItemType = 'good' | 'service' | 'idea' | 'request_service' | 'need_good';
+
+export interface PlatformItem {
+    id: string;
+    ownerAgentId: string; // ID of the NodalAgent offering/seeking this
+    type: ItemType;
+    description: string;
+    descriptionEmbedding: number[]; // Vector representation
+    tags: string[];
+    category?: string;
+    locationContext?: Location; // Relevant if item is location-specific
+    quantity?: number;
+    valuePerception?: number; // Agent's perceived value
+    activeUntil?: Date;
+    urgency?: number;
+    createdAt?: Date | string;
+    valueVector?: ValueVector;
+}
+
+export interface IncentiveWeights {
+    proximity: number;        // e.g., 0.0 to 1.0
+    semanticMatch: number;    // e.g., 0.0 to 1.0
+    tagOverlap: number;       // e.g., 0.0 to 1.0
+    urgencyFactor: number;    // e.g., 0.0 to 1.0
+    reputationInfluence: number; // How much others' reputation affects choices
+}
+
+export interface NodalAgentProfile {
+    id: string;
+    currentLocation: Location;
+    offerings: PlatformItem[];
+    seekings: PlatformItem[];
+    incentiveWeights: IncentiveWeights;
+    preferencesVector: number[]; // Learned representation of broader interests
+    localInteractionHistory: Map<string, 'positive' | 'negative' | 'neutral'>; // AgentID -> outcome
+    reputationScore: number; // Simplified representation
+}
+
+export interface OrchestratorItemRecord extends PlatformItem {
+    addedTimestamp: number;
+}
+
+export interface TransactionRecord {
+    seekerAgentId: string;
+    offererAgentId: string;
+    seekingItemId: string;
+    offeringItemId: string;
+    outcome: 'success' | 'failure';
+    timestamp: number;
+}
+
+// ==================== COORDINATION MECHANISM TYPE ====================
+
+export interface CoordinationMechanism {
+    id: string;
+    type: string; // 'algorithmic', 'collaboration', 'resource_exchange', etc.
+    participants: string[]; // Profile IDs
+    initiatorId: string;
+    status: 'pending' | 'active' | 'completed' | 'failed';
+    details: {
+        objectives: any[];
+    };
+    createdAt: number;
+    updatedAt: number;
+    currentState: {
+        phase: string;
+        progress: number;
+        participants: Array<{
+            profileId: string;
+            engagement: number;
+            contribution: number;
+            satisfaction: number;
+            commitment: number;
+            lastActive: Date;
+        }>;
+        resources: any[];
+        conflicts: any[];
+        resolutions: any[];
+    };
+    performance: {
+        efficiency: number;
+        effectiveness: number;
+        satisfaction: number;
+        scalability: number;
+        adaptability: number;
+        robustness: number;
+    };
+}
+
 export interface TimeWindow {
     id?: string;
     type: 'daily' | 'weekly' | 'specific_dates' | 'indefinite';
@@ -168,6 +259,9 @@ export interface Profile {
     wellBeingScore?: number;
     abstractResources?: { [key in AbstractResourceType]?: ResourceVector };
     weightHistory?: number[]; // Added for BehaviorObserver
+    // Add properties needed for harmonization engine
+    seekings?: PlatformItem[];
+    offerings?: PlatformItem[];
 }
 
 export interface ServiceListingPricing {
@@ -241,6 +335,11 @@ export interface Connection {
     type: string;
     history: any[];
     lastInteraction: Date;
+    // Add missing properties that were referenced in the code
+    fromProfileId?: string;
+    toProfileId?: string;
+    status?: string;
+    lastUsed?: Date;  // For graph network compatibility
 }
 
 export interface MatchingResult {
@@ -248,6 +347,8 @@ export interface MatchingResult {
     profileB: string;
     score: number;
     reason: string;
+    // Add matchScore property to support legacy usage
+    matchScore?: number;
 }
 
 export interface OptimizationObjective {
@@ -284,4 +385,24 @@ export interface OptimizationResult {
     convergence: any;
     alternativeSolutions: any[];
     sensitivity: any;
+}
+
+// ==================== GRAPH NETWORK TYPES ====================
+
+export interface GraphNode {
+    id: string;
+    profile: Profile;
+    connections: string[];
+    weight: number;
+    lastInteraction: Date;
+    // Add optional properties that might be referenced in the code
+    lastUsed?: Date;
+}
+
+export interface GraphEdge {
+    id: string;
+    source: string;
+    target: string;
+    weight: number;
+    lastUsed: Date;
 }

@@ -11,6 +11,7 @@ export class NetworkManager {
 
   public addNode(profile: Profile): void {
     const node: GraphNode = {
+      id: profile.id,
       profile,
       connections: [],
       weight: 1,
@@ -28,6 +29,7 @@ export class NetworkManager {
       existingEdge.lastUsed = new Date();
     } else {
       this.edges.set(edgeId, {
+        id: edgeId,
         source,
         target,
         weight,

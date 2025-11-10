@@ -1,3 +1,5 @@
+#***-------##-FINISHED-##--------*** 
+
 # 🌟 Coordination Cosmos - Advanced Symbiotic Network
 
 > **A revolutionary AI-powered coordination system for optimizing human collaboration, resource allocation, and community building through advanced multi-dimensional matching and real-time optimization algorithms.**
@@ -1140,3 +1142,16 @@ Security & Privacy: Encryption, differential privacy for aggregated data.
 Sophisticated UX: The "Aura" interface would be a major frontend development effort.
 
 This code provides a foundational algorithmic skeleton. It shows how agents might make local decisions, interact with a central (but lightweight for data storage) orchestrator, and how a feedback loop could optimize the system over time.
+
+## n8n Integration
+
+For advanced workflow automation and external integrations, the Coordination Cosmos platform provides n8n endpoints for:
+
+- **Profile Management**: Create, update, and find user profiles via n8n workflows
+- **Listing Management**: Automate service and goods listings
+- **Match Coordination**: Programmatic matching and coordination creation
+- **Communication**: Automated messaging and notification workflows
+- **Optimization**: Schedule system optimization tasks
+- **Data Analysis**: Export and analyze platform metrics
+
+To integrate with n8n, use the `/n8n` endpoints as documented in `n8n_integration.md`.

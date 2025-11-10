@@ -1,6 +1,5 @@
 
-import { Profile, PlatformItem, ValueVector, AbstractResourceType } from '../../shared/types';
-import { NodalAgentProfile } from '../../shared/types';
+import { Profile, PlatformItem, ValueVector, AbstractResourceType, NodalAgentProfile } from '../../shared/types';
 
 // A simple representation of a user, adapted for the harmonization engine
 interface User extends NodalAgentProfile {
