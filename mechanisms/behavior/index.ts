@@ -9,8 +9,8 @@ export class BehaviorObserver {
 
   public observeInteraction(
     profileId: string,
-    interactionType: string,
-    outcome: string
+    interactionType: 'view' | 'message' | 'transaction',
+    outcome: 'positive' | 'neutral' | 'negative'
   ): void {
     const profile = this.profiles.getProfile(profileId);
     if (!profile) return;

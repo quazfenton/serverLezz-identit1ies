@@ -32,9 +32,19 @@ export class RecommendationEngine {
       .map((rec) => rec.id);
   }
 
-  public getListingRecommendations(profileId: string): ServiceListing[] {
-    // Listings will be injected separately; return empty array
-    return [];
+  public async getListingRecommendations(profileId: string): Promise<ServiceListing[]> {
+    const profileRecs = this.getProfileRecommendations(profileId);
+    const allListings = await this.listingsRepo.getAll();
+    
+    const recommendedListings = allListings.filter(listing => 
+        listing.isActive &&
+        profileRecs.includes(listing.providerId) &&
+        listing.providerId !== profileId
+    );
+
+    // For now, we are not doing any extra ranking.
+    // A future improvement would be to rank listings based on the recommendation score of their providers.
+    return recommendedListings;
   }
 
   public getOptimalMatches(profileId: string): { profileId: string; score: number }[] {

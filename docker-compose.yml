@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: coordination_cosmos
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -24,7 +24,7 @@ services:
       - "3000:3000"
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/coordination_cosmos
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/coordination_cosmos
       - PORT=3000
       - WS_PORT=8080
       - NODE_ENV=production

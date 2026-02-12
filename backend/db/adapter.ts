@@ -129,8 +129,8 @@ export class DatabaseProfilesRepo {
       },
       lastUpdated: dbProfile.updatedAt,
       isActive: dbProfile.isActive,
-      seekings: [],
-      offerings: [],
+      seekings: dbProfile.seekings || [],
+      offerings: dbProfile.offerings || [],
     };
   }
 
