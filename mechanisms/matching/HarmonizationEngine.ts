@@ -1,11 +1,4 @@
-
-import { Profile, PlatformItem, ValueVector, AbstractResourceType, NodalAgentProfile } from '../../shared/types';
-
-// A simple representation of a user, adapted for the harmonization engine
-interface User extends NodalAgentProfile {
-    current_context: string; // Assuming context is a string for now
-    well_being_score: number;
-}
+import { Profile, PlatformItem, MatchingResult } from '../../shared/types';
 
 export class HarmonizationEngine {
     private max_distance_km: number;
@@ -63,7 +56,7 @@ export class HarmonizationEngine {
     public calculateHarmonizationScore(
         need_particle: PlatformItem,
         offer_particle: PlatformItem,
-        users: { [key: string]: User },
+        users: { [key: string]: any },
         current_time: Date
     ): number {
         if (need_particle.ownerAgentId === offer_particle.ownerAgentId) {
@@ -73,7 +66,6 @@ export class HarmonizationEngine {
         // 1. Resource Type Match
         let resource_match_score = 1.0;
         if (need_particle.category !== offer_particle.category) {
-            // Allow some flexibility for related types
             if ((need_particle.category === 'knowledge' && offer_particle.category === 'service') ||
                (need_particle.category === 'service' && offer_particle.category === 'knowledge')) {
                 resource_match_score = 0.5;
@@ -88,14 +80,19 @@ export class HarmonizationEngine {
             offer_particle.valueVector?.attributes || {}
         );
 
-        // 3. Proximity Score
-        const dist = this.haversineDistance(
-            need_particle.locationContext.latitude,
-            need_particle.locationContext.longitude,
-            offer_particle.locationContext.latitude,
-            offer_particle.locationContext.longitude
-        );
-        const proximity_score = Math.max(0.0, 1.0 - (dist / this.max_distance_km));
+        // 3. Proximity Score - handle undefined locationContext
+        let proximity_score = 0.5; // default if no location data
+        const needLoc = need_particle.locationContext;
+        const offerLoc = offer_particle.locationContext;
+        if (needLoc && offerLoc) {
+            const dist = this.haversineDistance(
+                needLoc.latitude,
+                needLoc.longitude,
+                offerLoc.latitude,
+                offerLoc.longitude
+            );
+            proximity_score = Math.max(0.0, 1.0 - (dist / this.max_distance_km));
+        }
 
         // 4. Urgency Alignment
         const urgency_score = ((need_particle.urgency || 0.5) + (offer_particle.urgency || 0.5)) / 2.0;
@@ -105,23 +102,30 @@ export class HarmonizationEngine {
         const offer_user = users[offer_particle.ownerAgentId];
         let context_relevance_score = 0.0;
         if (need_user && offer_user) {
-            if (need_user.current_context === 'work' && offer_user.current_context === 'work') {
-                context_relevance_score = 1.0;
-            } else if (need_user.current_context === offer_user.current_context) {
-                context_relevance_score = 0.5;
-            } else {
-                context_relevance_score = 0.2;
+            const needContext = need_user.current_context || need_user.currentContext || '';
+            const offerContext = offer_user.current_context || offer_user.currentContext || '';
+            if (needContext && offerContext) {
+                if (needContext === 'work' && offerContext === 'work') {
+                    context_relevance_score = 1.0;
+                } else if (needContext === offerContext) {
+                    context_relevance_score = 0.5;
+                } else {
+                    context_relevance_score = 0.2;
+                }
             }
         }
 
         // 6. Time Decay
-        const time_diff_seconds = (current_time.getTime() - new Date(need_particle.createdAt).getTime()) / 1000;
-        const time_decay = Math.exp(-this.time_decay_factor * time_diff_seconds);
+        const createdAt = need_particle.createdAt ? new Date(need_particle.createdAt) : current_time;
+        const time_diff_seconds = (current_time.getTime() - createdAt.getTime()) / 1000;
+        const time_decay = Math.exp(-this.time_decay_factor * Math.max(0, time_diff_seconds));
 
         // 7. Well-being Impact
         let well_being_impact_score = 0.5;
         if (need_user && offer_user) {
-            well_being_impact_score = (1.0 - need_user.well_being_score) * 0.5 + (1.0 - offer_user.well_being_score) * 0.5;
+            const needWellBeing = need_user.well_being_score ?? need_user.wellBeingScore ?? 0.5;
+            const offerWellBeing = offer_user.well_being_score ?? offer_user.wellBeingScore ?? 0.5;
+            well_being_impact_score = (1.0 - needWellBeing) * 0.5 + (1.0 - offerWellBeing) * 0.5;
             well_being_impact_score = Math.max(0.0, Math.min(1.0, well_being_impact_score + 0.5));
         }
 
@@ -142,19 +146,28 @@ export class HarmonizationEngine {
     public findOptimalMatches(
         sourceProfile: Profile,
         candidateProfiles: Profile[],
-        users: { [key: string]: User },
+        users: { [key: string]: any },
         currentTime: Date
-    ): any[] {
-        const matches = [];
+    ): MatchingResult[] {
+        const matches: MatchingResult[] = [];
 
+        const seekings = sourceProfile.seekings || [];
+        
         for (const candidate of candidateProfiles) {
             if (sourceProfile.id === candidate.id) continue;
 
-            for (const seeking of sourceProfile.seekings) {
-                for (const offering of candidate.offerings) {
+            const offerings = candidate.offerings || [];
+
+            for (const seeking of seekings) {
+                for (const offering of offerings) {
                     const score = this.calculateHarmonizationScore(seeking, offering, users, currentTime);
                     if (score > 0.5) {
-                        matches.push({ profileA: sourceProfile, profileB: candidate, score, seeking, offering });
+                        matches.push({
+                            profileA: sourceProfile.id,
+                            profileB: candidate.id,
+                            score,
+                            reason: `Match: seeking "${seeking.description}" with offering "${offering.description}"`,
+                        });
                     }
                 }
             }

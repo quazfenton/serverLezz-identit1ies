@@ -1,4 +1,3 @@
-import { Profile, ServiceListing } from '../../shared/types';
 import { ProfileManager } from '../profiles';
 
 export class BehaviorObserver {
@@ -10,8 +9,8 @@ export class BehaviorObserver {
 
   public observeInteraction(
     profileId: string,
-    interactionType: 'view' | 'message' | 'transaction',
-    outcome: 'positive' | 'neutral' | 'negative'
+    interactionType: string,
+    outcome: string
   ): void {
     const profile = this.profiles.getProfile(profileId);
     if (!profile) return;
@@ -50,6 +49,8 @@ export class BehaviorObserver {
 
     // Get weight history and analyze patterns
     const weights = this.profiles.getWeightTrend(profileId);
+    if (weights.length === 0) return { interactionFrequency: 0, positivityRatio: 0, activityLevel: 0 };
+
     const interactionFrequency = weights.length;
     const positivityRatio = weights.filter((w) => w > 0.5).length / weights.length;
     const activityLevel = weights.reduce((sum, w) => sum + w, 0) / weights.length;

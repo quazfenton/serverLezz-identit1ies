@@ -1,29 +1,33 @@
 import { Profile } from '../../shared/types';
-import { ProfilesRepo } from '../../backend/repos'; // Assuming ProfilesRepo is available here
 
 export class ProfileManager {
-  private profilesRepo: ProfilesRepo;
+  private profilesMap: Map<string, Profile> = new Map();
 
-  constructor(profilesRepo: ProfilesRepo) {
-    this.profilesRepo = profilesRepo;
-  }
+  constructor() {}
 
-  public async addProfile(profile: Profile): Promise<void> {
-    // Initialize weightHistory for new profiles
+  public addProfile(profile: Profile): void {
     if (!profile.weightHistory) {
       profile.weightHistory = [profile.weight];
     }
-    await this.profilesRepo.save(profile);
+    this.profilesMap.set(profile.id, profile);
   }
 
-  public async updateProfileWeights(behaviorData: {
+  public getProfile(id: string): Profile | undefined {
+    return this.profilesMap.get(id);
+  }
+
+  public getProfiles(): Profile[] {
+    return Array.from(this.profilesMap.values());
+  }
+
+  public updateProfileWeights(behaviorData: {
     profileId: string;
     interactions: number;
     positiveFeedback: number;
     negativeFeedback: number;
     timeActive: number;
-  }): Promise<void> {
-    const profile = await this.profilesRepo.getById(behaviorData.profileId);
+  }): void {
+    const profile = this.profilesMap.get(behaviorData.profileId);
     if (!profile) return;
 
     // Calculate new weight based on behavior
@@ -55,19 +59,10 @@ export class ProfileManager {
         .reduce((sum, weight) => sum + weight, 0) / 10;
       profile.weight = Math.max(0.1, trend * 0.9);
     }
-    await this.profilesRepo.save(profile);
   }
 
-  public async getProfile(id: string): Promise<Profile | undefined> {
-    return this.profilesRepo.getById(id);
-  }
-
-  public async getProfiles(): Promise<Profile[]> {
-    return this.profilesRepo.getAll();
-  }
-
-  public async getWeightTrend(id: string): Promise<number[]> {
-    const profile = await this.profilesRepo.getById(id);
+  public getWeightTrend(id: string): number[] {
+    const profile = this.profilesMap.get(id);
     return profile?.weightHistory || [];
   }
 }

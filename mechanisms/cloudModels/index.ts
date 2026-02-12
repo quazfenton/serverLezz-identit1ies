@@ -26,7 +26,7 @@ export class CloudModelEngine {
 
     if (prompt.includes("optimize matching")) {
         return {
-            matchScore: Math.random() * 0.5 + 0.3, // Return a score between 0.3 and 0.8
+            matchScore: Math.random() * 0.5 + 0.3,
         };
     }
 
@@ -65,12 +65,14 @@ export class CloudModelEngine {
         matches.push({
             profileA: sourceProfile.id,
             profileB: candidate.id,
+            score: llmResponse.matchScore || 0,
+            reason: `LLM-optimized match`,
             matchScore: llmResponse.matchScore || 0,
-        } as MatchingResult);
+        });
     }
 
     return matches
-      .sort((a, b) => b.matchScore - a.matchScore)
+      .sort((a, b) => (b.matchScore || b.score) - (a.matchScore || a.score))
       .slice(0, 20);
   }
 
@@ -81,19 +83,37 @@ export class CloudModelEngine {
     const actions: RecommendedAction[] = [];
     if ((systemMetrics.wasteLevel ?? 0) > 0.2) {
       actions.push({
-        action: "reduce_waste",
-        target: "network",
-        value: 0.05,
+        type: 'connect',
         priority: 0.8,
-        justification: "Waste level high",
+        confidence: 0.7,
+        description: 'Reduce waste level in network',
+        expectedOutcome: { utilityGain: 0.5 },
+        requiredResources: ['communication'],
+        timeline: {
+          start: new Date(),
+          end: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        },
+        action: 'reduce_waste',
+        target: 'network',
+        value: 0.05,
+        justification: 'Waste level high',
       });
     } else {
       actions.push({
-        action: "increase_equity",
-        target: "allocation",
-        value: 0.03,
+        type: 'collaborate',
         priority: 0.7,
-        justification: "Improve fairness",
+        confidence: 0.6,
+        description: 'Improve fairness in allocation',
+        expectedOutcome: { utilityGain: 0.3 },
+        requiredResources: ['allocation'],
+        timeline: {
+          start: new Date(),
+          end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+        action: 'increase_equity',
+        target: 'allocation',
+        value: 0.03,
+        justification: 'Improve fairness',
       });
     }
     return actions;
@@ -101,5 +121,3 @@ export class CloudModelEngine {
 }
 
 export default CloudModelEngine;
-
-

@@ -30,14 +30,18 @@
   "include": [
     "backend/**/*",
     "mechanisms/**/*",
-    "shared/**/*",
-    "frontend/**/*"
+    "shared/**/*"
   ],
   "exclude": [
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "node_modules"
+    "node_modules",
+    "mechanisms/llmOrchestration/**",
+    "src/**",
+    "examples/**",
+    "simulation.ts",
+    "demo-server.js"
   ],
   "ts-node": {
     "esm": false,

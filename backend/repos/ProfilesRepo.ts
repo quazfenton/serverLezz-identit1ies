@@ -1,29 +1,27 @@
 import { Profile } from "../../shared/types";
 
 export interface IProfilesRepo {
-  getById(id: string): Profile | undefined;
-  save(profile: Profile): void;
-  getAll(): Profile[];
+  getById(id: string): Promise<Profile | undefined>;
+  save(profile: Profile): Promise<void>;
+  getAll(): Promise<Profile[]>;
 }
 
 export class ProfilesRepo implements IProfilesRepo {
   private store: Map<string, Profile>;
 
-  constructor(store: Map<string, Profile>) {
+  constructor(store: Map<string, Profile> = new Map()) {
     this.store = store;
   }
 
-  getById(id: string): Profile | undefined {
+  async getById(id: string): Promise<Profile | undefined> {
     return this.store.get(id);
   }
 
-  save(profile: Profile): void {
+  async save(profile: Profile): Promise<void> {
     this.store.set(profile.id, profile);
   }
 
-  getAll(): Profile[] {
+  async getAll(): Promise<Profile[]> {
     return Array.from(this.store.values());
   }
 }
-
-

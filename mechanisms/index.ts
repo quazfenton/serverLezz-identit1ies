@@ -5,4 +5,7 @@ export * from './simulation';
 export * from './behavior';
 export * from './recommendation';
 export * from './agents';
-export * from './llmOrchestration';
+export * from './optimization';
+export * from './matching/HarmonizationEngine';
+export * from './analytics/PredictiveAnalyticsEngine';
+export * from './utils';

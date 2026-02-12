@@ -1,21 +1,17 @@
-import { Profile, ServiceListing, GraphNode } from '../../shared/types';
+import { ServiceListing, GraphNode } from '../../shared/types';
 import { NetworkManager } from '../network';
 import { BehaviorObserver } from '../behavior';
-import { ListingsRepo } from '../../backend/repos';
 
 export class RecommendationEngine {
   private network: NetworkManager;
   private behavior: BehaviorObserver;
-  private listingsRepo: ListingsRepo;
 
   constructor(
     network: NetworkManager,
-    behavior: BehaviorObserver,
-    listingsRepo: ListingsRepo
+    behavior: BehaviorObserver
   ) {
     this.network = network;
     this.behavior = behavior;
-    this.listingsRepo = listingsRepo;
   }
 
   public getProfileRecommendations(profileId: string): string[] {
@@ -36,19 +32,9 @@ export class RecommendationEngine {
       .map((rec) => rec.id);
   }
 
-  public async getListingRecommendations(profileId: string): Promise<ServiceListing[]> {
-    const profileRecs = this.getProfileRecommendations(profileId);
-    const allListings = await this.listingsRepo.getAll();
-    
-    const recommendedListings = allListings.filter(listing => 
-        listing.isActive &&
-        profileRecs.includes(listing.providerId) &&
-        listing.providerId !== profileId
-    );
-
-    // For now, we are not doing any extra ranking.
-    // A future improvement would be to rank listings based on the recommendation score of their providers.
-    return recommendedListings;
+  public getListingRecommendations(profileId: string): ServiceListing[] {
+    // Listings will be injected separately; return empty array
+    return [];
   }
 
   public getOptimalMatches(profileId: string): { profileId: string; score: number }[] {
