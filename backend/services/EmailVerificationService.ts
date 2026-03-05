@@ -48,14 +48,45 @@ const VERIFICATION_CONFIG = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Email Adapters
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface EmailAdapter {
+  send(options: {
+    to: string;
+    subject: string;
+    template: string;
+    data: Record<string, any>;
+  }): Promise<void>;
+}
+
+export class ConsoleEmailAdapter implements EmailAdapter {
+  async send(options: {
+    to: string;
+    subject: string;
+    template: string;
+    data: Record<string, any>;
+  }): Promise<void> {
+    logger.info('📧 [Console Email] Sending email...', {
+      to: options.to,
+      subject: options.subject,
+      template: options.template,
+      url: options.data.verificationUrl,
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Email Verification Service
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export class EmailVerificationService {
   private cache: CacheService;
+  private emailAdapter: EmailAdapter;
 
-  constructor(cache?: CacheService) {
+  constructor(cache?: CacheService, emailAdapter?: EmailAdapter) {
     this.cache = cache || getCacheService();
+    this.emailAdapter = emailAdapter || new ConsoleEmailAdapter();
   }
 
   /**
@@ -276,21 +307,17 @@ export class EmailVerificationService {
   ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify/${type}?token=${token}`;
 
-    // TODO: Integrate with actual email service (SendGrid, AWS SES, etc.)
-    // For now, just log the URL
-    logger.info('Verification email would be sent', {
-      email,
-      type,
-      url: verificationUrl,
+    await this.emailAdapter.send({
+      to: email,
+      subject: this.getSubjectForType(type),
+      template: this.getTemplateForType(type),
+      data: { verificationUrl, token },
     });
 
-    // Example integration with email service:
-    // await emailService.send({
-    //   to: email,
-    //   subject: this.getSubjectForType(type),
-    //   template: this.getTemplateForType(type),
-    //   data: { verificationUrl, token },
-    // });
+    logger.info('Verification email process triggered', {
+      email,
+      type,
+    });
   }
 
   /**

@@ -51,7 +51,7 @@ model Profile {
   connections Connection[] @relation("ProfileConnections")
   sessions    Session[]
 
-  @@index([location, isActive])
+  @@index([city, isActive])
   @@index([name, isActive])
   @@map("profiles")
 }

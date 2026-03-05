@@ -3,106 +3,10 @@
 // Security • Validation • Logging • Rate Limiting • Error Handling
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Request, Response, NextFunction } from "express";
-import cors from "cors";
-import helmet from "helmet";
-import sanitizeHtml from "sanitize-html";
-import { randomBytes } from "crypto";
-import winston from "winston";
+import { logger, logSecurityEvent, requestLogger } from "../../shared/utils/logger";
 
-// Re-export auth module
 export * from "./auth";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Logger Configuration with Correlation IDs
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format((info) => {
-      // Add correlation ID if present
-      const requestId = (info as any).requestId;
-      if (requestId) {
-        info.requestId = requestId;
-      }
-      return info;
-    })(),
-    process.env.LOG_JSON === "true" ? winston.format.json() : winston.format.simple()
-  ),
-  transports: [
-    new winston.transports.File({
-      filename: process.env.LOG_FILE || "logs/error.log",
-      level: "error"
-    }),
-    new winston.transports.File({
-      filename: process.env.LOG_FILE?.replace(".log", "-combined.log") || "logs/combined.log"
-    })
-  ],
-});
-
-// Add console transport for development
-if (process.env.NODE_ENV !== "production") {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Security Event Logging
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function logSecurityEvent(event: string, details: any) {
-  logger.warn("Security Event", {
-    event,
-    ...details,
-    timestamp: new Date().toISOString()
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Request ID Generation with Cryptographic Security
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function generateRequestId(): string {
-  return `req_${Date.now().toString(36)}_${randomBytes(8).toString('hex')}`;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Request Logger Middleware
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function requestLogger(req: Request, res: Response, next: NextFunction) {
-  const requestId = generateRequestId();
-  (req as any).requestId = requestId;
-  const startTime = Date.now();
-
-  logger.info("Request started", {
-    requestId,
-    method: req.method,
-    path: req.path,
-    ip: req.ip,
-    userAgent: req.get("user-agent")
-  });
-
-  res.on("finish", () => {
-    const duration = Date.now() - startTime;
-    logger.info("Request completed", {
-      requestId,
-      method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      duration: `${duration}ms`
-    });
-  });
-
-  next();
-}
+export { logger, logSecurityEvent, requestLogger };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CORS Configuration

@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import sanitizeHtml from "sanitize-html";
 import rateLimit from "express-rate-limit";
-import { logger, logSecurityEvent } from "./middleware";
+import { logger, logSecurityEvent } from "../../shared/utils/logger";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // JWT Configuration
