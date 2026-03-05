@@ -286,6 +286,12 @@ export interface Profile {
   seekings: PlatformItem[];
   /** Items this profile is offering — always an array, defaults to [] */
   offerings: PlatformItem[];
+  /** Version for optimistic locking */
+  version?: number;
+  /** Optional email for authentication */
+  email?: string;
+  /** Optional password hash (never return in responses) */
+  passwordHash?: string;
 }
 
 // ──────────────────────── Service Listings ──────────────────────────────────────

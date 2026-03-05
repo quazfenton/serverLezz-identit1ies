@@ -6,13 +6,15 @@
 import { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import sanitizeHtml from "sanitize-html";
 import { randomBytes } from "crypto";
 import winston from "winston";
 
+// Re-export auth module
+export * from "./auth";
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// Logger Configuration
+// Logger Configuration with Correlation IDs
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const logger = winston.createLogger({
@@ -20,15 +22,23 @@ export const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
+    winston.format((info) => {
+      // Add correlation ID if present
+      const requestId = (info as any).requestId;
+      if (requestId) {
+        info.requestId = requestId;
+      }
+      return info;
+    })(),
     process.env.LOG_JSON === "true" ? winston.format.json() : winston.format.simple()
   ),
   transports: [
-    new winston.transports.File({ 
-      filename: process.env.LOG_FILE || "logs/error.log", 
-      level: "error" 
+    new winston.transports.File({
+      filename: process.env.LOG_FILE || "logs/error.log",
+      level: "error"
     }),
-    new winston.transports.File({ 
-      filename: process.env.LOG_FILE?.replace(".log", "-combined.log") || "logs/combined.log" 
+    new winston.transports.File({
+      filename: process.env.LOG_FILE?.replace(".log", "-combined.log") || "logs/combined.log"
     })
   ],
 });
@@ -56,7 +66,7 @@ export function logSecurityEvent(event: string, details: any) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Request ID Generation
+// Request ID Generation with Cryptographic Security
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function generateRequestId(): string {
@@ -478,19 +488,22 @@ export class WebSocketManager {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Authentication Middleware (Placeholder - implement full JWT auth)
+// Authentication Middleware (Legacy - use auth.ts for full JWT auth)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * @deprecated Use authenticateToken from './auth' instead
+ * This is a legacy middleware for session-based auth.
+ * New code should use the JWT-based authenticateToken from auth.ts
+ */
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  // TODO: Implement full JWT authentication
-  // For now, use session-based auth from existing code
-  
+  // Legacy session-based auth - use JWT auth from auth.ts for new code
   const sessionId = req.headers["session-id"] as string;
-  
+
   if (!sessionId) {
     return res.status(401).json({
       error: "Authentication required",
-      message: "Please provide a session-id header"
+      message: "Please provide a session-id header or use Bearer token"
     });
   }
 

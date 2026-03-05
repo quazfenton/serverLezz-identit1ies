@@ -5,6 +5,7 @@ import { Profile, ServiceListing, Connection } from '../../shared/types';
 import { ProfilesRepo } from '../repos/ProfilesRepo';
 import { ListingsRepo } from '../repos/ListingsRepo';
 import { ConnectionsRepo } from '../repos/ConnectionsRepo';
+import { logger } from '../middleware';
 
 // Attempt to import PrismaClient - may not be generated yet
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -39,7 +40,10 @@ export class DatabaseProfilesRepo {
 
       return this.mapDbProfileToProfile(dbProfile);
     } catch (error) {
-      console.error('Database error getting profile:', error);
+      logger.error('Database error getting profile', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        profileId: id,
+      });
       return undefined;
     }
   }
@@ -54,7 +58,10 @@ export class DatabaseProfilesRepo {
         create: dbProfile,
       });
     } catch (error) {
-      console.error('Database error saving profile:', error);
+      logger.error('Database error saving profile', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        profileId: profile.id,
+      });
       throw error;
     }
   }
@@ -70,7 +77,9 @@ export class DatabaseProfilesRepo {
 
       return dbProfiles.map((p: any) => this.mapDbProfileToProfile(p));
     } catch (error) {
-      console.error('Database error getting all profiles:', error);
+      logger.error('Database error getting all profiles', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       return [];
     }
   }
@@ -173,7 +182,10 @@ export class DatabaseListingsRepo {
 
       return this.mapDbListingToServiceListing(dbListing);
     } catch (error) {
-      console.error('Database error getting listing:', error);
+      logger.error('Database error getting listing', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        listingId: id,
+      });
       return undefined;
     }
   }
@@ -188,7 +200,10 @@ export class DatabaseListingsRepo {
         create: dbListing,
       });
     } catch (error) {
-      console.error('Database error saving listing:', error);
+      logger.error('Database error saving listing', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        listingId: listing.id,
+      });
       throw error;
     }
   }
@@ -202,7 +217,9 @@ export class DatabaseListingsRepo {
 
       return dbListings.map((l: any) => this.mapDbListingToServiceListing(l));
     } catch (error) {
-      console.error('Database error getting all listings:', error);
+      logger.error('Database error getting all listings', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       return [];
     }
   }
@@ -216,7 +233,10 @@ export class DatabaseListingsRepo {
 
       return dbListings.map((l: any) => this.mapDbListingToServiceListing(l));
     } catch (error) {
-      console.error('Database error getting provider listings:', error);
+      logger.error('Database error getting provider listings', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        providerId,
+      });
       return [];
     }
   }
@@ -294,7 +314,10 @@ export class DatabaseConnectionsRepo {
 
       return this.mapDbConnectionToConnection(dbConnection);
     } catch (error) {
-      console.error('Database error creating connection:', error);
+      logger.error('Database error creating connection', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        connection: { fromId: connection.profileA, toId: connection.profileB },
+      });
       throw error;
     }
   }
@@ -312,7 +335,10 @@ export class DatabaseConnectionsRepo {
 
       return dbConnections.map((c: any) => this.mapDbConnectionToConnection(c));
     } catch (error) {
-      console.error('Database error getting profile connections:', error);
+      logger.error('Database error getting profile connections', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        profileId,
+      });
       return [];
     }
   }
@@ -327,7 +353,10 @@ export class DatabaseConnectionsRepo {
 
       return this.mapDbConnectionToConnection(dbConnection);
     } catch (error) {
-      console.error('Database error getting connection:', error);
+      logger.error('Database error getting connection', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        connectionId: id,
+      });
       return undefined;
     }
   }
@@ -360,7 +389,7 @@ export async function initializeDatabaseAdapters(): Promise<{
     try {
       const prisma = new PrismaClient();
       await prisma.$connect();
-      console.log('✅ Database connected via Prisma');
+      logger.info('✅ Database connected via Prisma');
 
       return {
         profilesRepo: new DatabaseProfilesRepo(prisma),
@@ -368,14 +397,16 @@ export async function initializeDatabaseAdapters(): Promise<{
         connectionsRepo: new DatabaseConnectionsRepo(prisma),
       };
     } catch (error) {
-      console.warn('⚠️  Prisma connection failed, falling back to in-memory storage:', error);
+      logger.warn('⚠️  Prisma connection failed, falling back to in-memory storage', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   } else {
-    console.warn('⚠️  @prisma/client not available (not installed or not generated), using in-memory storage');
+    logger.warn('⚠️  @prisma/client not available (not installed or not generated), using in-memory storage');
   }
 
   // Fallback to in-memory repos
-  console.log('📦 Using in-memory storage adapters');
+  logger.info('📦 Using in-memory storage adapters');
   return {
     profilesRepo: new ProfilesRepo(),
     listingsRepo: new ListingsRepo(),

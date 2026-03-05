@@ -12,123 +12,141 @@ datasource db {
 
 model Profile {
   id        String   @id @default(cuid())
-  name      String
+  name      String   @index
+  email     String?  @unique @index
+  passwordHash String?
   avatar    String?
   bio       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  isActive  Boolean  @default(true)
-  
+  isActive  Boolean  @default(true) @index
+  version   Int      @default(0)
+
   // Location
-  latitude  Float?
-  longitude Float?
+  latitude  Float?   @index
+  longitude Float?   @index
   city      String?
   country   String?
-  
+
   // Resources (stored as JSON)
   resources Json?
-  
+
   // Economic profile (stored as JSON)
   economicProfile Json?
-  
+
   // Behavior profile (stored as JSON)
   behaviorProfile Json?
-  
+
   // Reputation (stored as JSON)
   reputation Json?
-  
+
   // Weight for matching
   weight Float @default(0.5)
-  
+
   // Tags (stored as JSON array)
   tags Json?
-  
+
   // Relationships
   listings    Listing[]
   connections Connection[] @relation("ProfileConnections")
   sessions    Session[]
-  
+
+  @@index([location, isActive])
+  @@index([name, isActive])
   @@map("profiles")
 }
 
 model Listing {
   id          String   @id @default(cuid())
-  title       String
+  title       String   @index
   description String
-  type        String   // 'offer' | 'request'
-  category    String?
-  status      String   @default("active") // 'active' | 'inactive' | 'deleted'
-  
+  type        String   @index // 'offer' | 'request'
+  category    String?  @index
+  status      String   @default("active") @index // 'active' | 'inactive' | 'deleted'
+
   // Provider
-  providerId String
-  provider   Profile @relation(fields: [providerId], references: [id])
-  
+  providerId String @index
+  provider   Profile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
   // Location
-  latitude  Float?
-  longitude Float?
+  latitude  Float?   @index
+  longitude Float?   @index
   city      String?
   country   String?
   remote    Boolean  @default(false)
-  
+
   // Pricing (stored as JSON)
   pricing Json?
-  
+
   // Availability (stored as JSON)
   availability Json?
-  
+
   // Requirements (stored as JSON)
   requirements Json?
-  
+
   // Quality metrics (stored as JSON)
   qualityMetrics Json?
-  
+
   // Tags (stored as JSON array)
   tags Json?
-  
+
   // Metadata
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @index
   updatedAt DateTime @updatedAt
   viewCount Int      @default(0)
   rating    Float    @default(0)
   reviewCount Int    @default(0)
-  
+  version   Int      @default(0)
+
+  @@index([providerId, status])
+  @@index([type, status])
+  @@index([latitude, longitude, status])
   @@map("listings")
 }
 
 model Connection {
   id        String   @id @default(cuid())
-  fromId    String
-  toId      String
+  fromId    String   @index
+  toId      String   @index
   strength  Float    @default(0.5)
-  status    String   @default("pending") // 'pending' | 'accepted' | 'rejected'
+  status    String   @default("pending") @index // 'pending' | 'accepted' | 'rejected'
   message   String?
-  
+  version   Int      @default(0)
+
   // Relationships
-  fromProfile Profile @relation("ProfileConnections", fields: [fromId], references: [id])
-  
+  fromProfile Profile @relation("ProfileConnections", fields: [fromId], references: [id], onDelete: Cascade)
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Interactions (stored as JSON array)
   interactions Json?
-  
+
   @@unique([fromId, toId])
+  @@index([fromId, status])
+  @@index([toId, status])
   @@map("connections")
 }
 
 model Session {
   id        String   @id @default(cuid())
-  profileId String
-  profile   Profile @relation(fields: [profileId], references: [id])
+  profileId String   @index
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  refreshToken String?
+  userAgent String?
+  ip        String?
+  expiresAt DateTime @index
   createdAt DateTime @default(now())
-  
+
+  @@index([profileId, expiresAt])
   @@map("sessions")
 }
 
 model SystemMetrics {
   id                String   @id @default(cuid())
-  timestamp         DateTime @default(now())
+  timestamp         DateTime @default(now()) @index
   totalUsers        Int      @default(0)
   activeUsers       Int      @default(0)
   totalListings     Int      @default(0)
@@ -142,6 +160,7 @@ model SystemMetrics {
   coordinationCost  Float    @default(0)
   networkHealth     Float    @default(0)
   adaptationSpeed   Float    @default(0)
-  
+
+  @@index([timestamp])
   @@map("system_metrics")
 }
