@@ -6,6 +6,37 @@
 import crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
 
+// Private IP ranges for SSRF protection
+const PRIVATE_IP_PATTERNS = [
+  /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/, // 10.0.0.0/8
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/, // 172.16.0.0/12
+  /^192\.168\.\d{1,3}\.\d{1,3}$/, // 192.168.0.0/16
+  /^169\.254\.\d{1,3}\.\d{1,3}$/, // 169.254.0.0/16 (link-local)
+  /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/, // 127.0.0.0/8 (loopback)
+  /^0\.0\.0\.0$/, // 0.0.0.0
+  /^::1$/, // IPv6 loopback
+  /^fc00:/i, // IPv6 unique local
+  /^fe80:/i, // IPv6 link-local
+];
+
+// Localhost patterns
+const LOCALHOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\./,
+  /^::1$/,
+  /^0\.0\.0\.0$/,
+];
+
+// Blocked internal hostnames
+const BLOCKED_HOSTNAMES = [
+  'metadata.google.internal',
+  'metadata.azure.internal',
+  'metadata.internal',
+  'kubernetes.default',
+  'kubernetes.default.svc',
+  'kubernetes.default.svc.cluster.local',
+];
+
 /**
  * Sanitize sensitive data from logs (API keys, tokens, secrets)
  */
@@ -248,6 +279,107 @@ export function debounce<T extends (...args: any[]) => any>(
     }
     timeout = setTimeout(later, wait);
   };
+}
+
+/**
+ * Check if an IP address is private/internal
+ */
+export function isPrivateIP(ip: string): boolean {
+  const normalizedIP = ip.trim().toLowerCase();
+  return PRIVATE_IP_PATTERNS.some((pattern) => pattern.test(normalizedIP));
+}
+
+/**
+ * Check if hostname is localhost or internal
+ */
+export function isLocalhost(hostname: string): boolean {
+  const normalizedHostname = hostname.trim().toLowerCase();
+  return LOCALHOST_PATTERNS.some((pattern) => pattern.test(normalizedHostname));
+}
+
+/**
+ * Validate URL for SSRF protection
+ * 
+ * This function:
+ * - Validates URL format
+ * - Ensures only http/https protocols
+ * - Blocks private/internal IP addresses
+ * - Blocks localhost
+ * - Blocks known internal hostnames
+ */
+export function validateURL(url: string): { valid: boolean; error?: string } {
+  if (!url || typeof url !== 'string') {
+    return { valid: false, error: 'URL is required' };
+  }
+
+  let parsedURL: URL;
+  
+  try {
+    parsedURL = new URL(url.trim());
+  } catch {
+    return { valid: false, error: 'Invalid URL format' };
+  }
+
+  // Check protocol
+  if (!['http:', 'https:'].includes(parsedURL.protocol)) {
+    return { valid: false, error: 'Only HTTP and HTTPS protocols are allowed' };
+  }
+
+  const hostname = parsedURL.hostname.toLowerCase();
+
+  // Check for localhost
+  if (isLocalhost(hostname)) {
+    return { valid: false, error: 'Localhost URLs are not allowed' };
+  }
+
+  // Check for private IP addresses
+  if (isPrivateIP(hostname)) {
+    return { valid: false, error: 'Internal IP addresses are not allowed' };
+  }
+
+  // Block internal hostnames
+  if (BLOCKED_HOSTNAMES.some((blocked) => hostname.includes(blocked))) {
+    return { valid: false, error: 'Internal hostnames are not allowed' };
+  }
+
+  // Block IP address literals
+  const ipLiteralPattern = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  if (ipLiteralPattern.test(hostname)) {
+    return { valid: false, error: 'IP address literals are not allowed' };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Sanitize URL for safe use
+ */
+export function sanitizeURL(url: string): string | null {
+  if (!url) return null;
+
+  // First validate for SSRF
+  const validation = validateURL(url);
+  if (!validation.valid) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url.trim());
+    
+    // Sanitize hostname (remove dangerous characters)
+    const safeHostname = parsed.hostname.replace(/[^\w.-]/g, '');
+    parsed.hostname = safeHostname;
+    
+    // Sanitize pathname
+    parsed.pathname = parsed.pathname.replace(/[^\w./-]/g, '');
+    
+    // Clear hash
+    parsed.hash = '';
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
 }
 
 /**

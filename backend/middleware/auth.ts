@@ -11,15 +11,24 @@ function logSecurityEvent(event: string, details: Record<string, any>) {
   logger.warn(`Security: ${event}`, details);
 }
 
+// Validate JWT secret on module load - CRITICAL: No fallback to insecure secret
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
 
-// Validate JWT secret
-if (!JWT_SECRET || JWT_SECRET === 'fallback-secret-change-in-production') {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET must be set to a secure value in production');
-  }
-  logger.warn('Using insecure JWT_SECRET. Set JWT_SECRET environment variable for production.');
+// CRITICAL: Enforce JWT secret in all environments
+if (!JWT_SECRET) {
+  throw new Error('CRITICAL: JWT_SECRET environment variable is not set. This is required for security.');
+}
+
+// Warn if using weak secret
+if (JWT_SECRET.length < 32) {
+  logger.warn('JWT_SECRET is shorter than 32 characters. Consider using a longer, more secure secret.');
+}
+
+// Check for common weak secrets
+const WEAK_SECRETS = ['fallback-secret', 'secret', 'password', '123456', 'jwt-secret', 'change-me'];
+if (WEAK_SECRETS.some(weak => JWT_SECRET.toLowerCase().includes(weak))) {
+  logger.warn('JWT_SECRET contains a common weak pattern. Consider using a cryptographically secure random value.');
 }
 
 export interface AuthToken {

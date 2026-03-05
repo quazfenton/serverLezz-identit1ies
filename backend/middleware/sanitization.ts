@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { sanitizeInput, sanitizeLogInput } from '../utils';
+import { sanitizeInput, sanitizeLogInput, validateURL, sanitizeURL } from '../utils';
 import { z } from 'zod';
 
 /**
@@ -46,6 +46,33 @@ export function sanitizeAll(req: Request, res: Response, next: NextFunction) {
       sanitizeParams(req, res, next);
     });
   });
+}
+
+/**
+ * Validate URL fields in request body
+ * Checks for SSRF vulnerabilities
+ */
+export function validateURLFields(fields: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    for (const field of fields) {
+      const value = getNestedValue(req.body, field);
+      if (value) {
+        const validation = validateURL(value);
+        if (!validation.valid) {
+          return res.status(400).json({
+            error: 'Invalid URL',
+            field,
+            message: validation.error,
+          });
+        }
+        
+        // Sanitize the URL
+        const sanitized = sanitizeURL(value);
+        setNestedValue(req.body, field, sanitized);
+      }
+    }
+    next();
+  };
 }
 
 /**
@@ -119,6 +146,18 @@ export function validateFields(validators: Record<string, (value: any) => string
  */
 function getNestedValue(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Set nested value in object
+ */
+function setNestedValue(obj: any, path: string, value: any): void {
+  const keys = path.split('.');
+  const lastKey = keys.pop()!;
+  const target = keys.reduce((current, key) => current?.[key], obj);
+  if (target && lastKey) {
+    target[lastKey] = value;
+  }
 }
 
 /**
