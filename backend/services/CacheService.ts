@@ -324,12 +324,12 @@ export class CacheService {
         
         // Parse Redis info
         const connectedClientsMatch = info.match(/connected_clients:(\d+)/);
-        if (connectedClientsMatch) {
+        if (connectedClientsMatch?.[1]) {
           stats.connectedClients = parseInt(connectedClientsMatch[1]);
         }
 
         const usedMemoryMatch = memoryInfo.match(/used_memory:(\d+)/);
-        if (usedMemoryMatch) {
+        if (usedMemoryMatch?.[1]) {
           stats.memoryUsage = parseInt(usedMemoryMatch[1]);
         }
       } catch (error) {

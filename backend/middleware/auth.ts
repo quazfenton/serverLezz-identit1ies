@@ -154,7 +154,7 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
  */
 function parseExpiration(expiration: string): number {
   const match = expiration.match(/^(\d+)([smhd])$/);
-  if (!match) return 86400; // Default 24 hours
+  if (!match?.[1] || !match?.[2]) return 86400; // Default 24 hours
 
   const value = parseInt(match[1], 10);
   const unit = match[2];

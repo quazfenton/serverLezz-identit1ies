@@ -318,6 +318,7 @@ export interface ServiceListing {
   updatedAt: Date;
   isActive: boolean;
   valueVector?: ValueVector;
+  version?: number;
 }
 
 // ──────────────────────── System Metrics & State ────────────────────────────────

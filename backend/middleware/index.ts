@@ -4,6 +4,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { logger, logSecurityEvent, requestLogger } from "../../shared/utils/logger";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import sanitizeHtml from "sanitize-html";
+import type { Request, Response, NextFunction } from "express";
+import type http from "http";
 
 export * from "./auth";
 export { logger, logSecurityEvent, requestLogger };

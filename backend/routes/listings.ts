@@ -11,11 +11,11 @@ import {
   createLimiter,
   sanitizeAll,
   AuthenticatedRequest,
-} from '../../middleware';
-import { asyncHandler, ValidationError, ListingNotFoundError } from '../../middleware/errors';
-import { ListingService, CreateListingInput, UpdateListingInput } from '../../services/ListingService';
-import { RelevanceService } from '../../services/RelevanceService';
-import { logger } from '../../middleware';
+} from '../middleware';
+import { asyncHandler, ValidationError, ListingNotFoundError } from '../middleware/errors';
+import { ListingService, CreateListingInput, UpdateListingInput } from '../services/ListingService';
+import { RelevanceService } from '../services/RelevanceService';
+import { logger } from '../middleware';
 
 const router = Router();
 
@@ -183,7 +183,7 @@ router.get(
     const requestId = (req as any).requestId;
 
     const listingService = (req.app.locals as any).listingService as ListingService;
-    const listing = await listingService.getListingById(req.params.id, requestId);
+    const listing = await listingService.getListingById(req.params.id!, requestId);
 
     res.json({
       success: true,
@@ -267,8 +267,8 @@ router.put(
       : undefined;
 
     const input: UpdateListingInput = {
-      title: validated.title,
-      description: validated.description,
+      title: validated.title ?? undefined,
+      description: validated.description ?? undefined,
       pricing: validated.pricing,
       availability: validated.availability,
       requirements: validated.requirements,
@@ -277,8 +277,8 @@ router.put(
     };
 
     const listing = await listingService.updateListing(
-      req.params.id,
-      auth.profileId,
+      req.params.id!,
+      auth.profileId!,
       input,
       expectedVersion,
       requestId
@@ -293,7 +293,7 @@ router.put(
     res.json({
       success: true,
       listing,
-      version: listing.version,
+      version: listing.version ?? 0,
     });
   })
 );
@@ -314,7 +314,7 @@ router.delete(
     }
 
     const listingService = (req.app.locals as any).listingService as ListingService;
-    await listingService.deleteListing(req.params.id, auth.profileId, requestId);
+    await listingService.deleteListing(req.params.id!, auth.profileId, requestId);
 
     logger.info('Listing deactivated', {
       listingId: req.params.id,

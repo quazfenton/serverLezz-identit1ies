@@ -39,13 +39,13 @@ import { createLLMClient } from "./services/LLMClient";
 // Database
 import { initializeDatabaseAdapters } from "./db/adapter";
 
-// Prisma for health checks
-let PrismaClient: any;
+// Prisma for health checks - optional
+let prisma: any = null;
 try {
-  const mod = eval("require")('@prisma/client');
-  PrismaClient = mod.PrismaClient;
+  const { PrismaClient } = require("@prisma/client");
+  prisma = new PrismaClient();
 } catch {
-  PrismaClient = null;
+  logger.warn("Prisma client not available - health checks will be limited");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -304,11 +304,9 @@ async function startServer() {
     (app.locals as any).llmClient = llmClient;
     (app.locals as any).wsManager = wsManager;
 
-    // Set up database health check
-    if (PrismaClient) {
-      let prisma: any;
+    // Set up database health check (optional - Prisma may not be available)
+    if (prisma) {
       try {
-        prisma = new PrismaClient();
         await prisma.$connect();
         logger.info("✅ Database connected via Prisma");
 

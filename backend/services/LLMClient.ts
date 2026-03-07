@@ -4,8 +4,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import axios, { AxiosError } from 'axios';
-import { logger } from '../../middleware';
-import { sanitizeLogInput } from '../../middleware/auth';
+import { logger } from '../middleware';
+import { sanitizeLogInput } from '../middleware/auth';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Types

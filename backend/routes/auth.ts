@@ -17,11 +17,11 @@ import {
   generateAuthToken,
   generateRefreshToken,
   AuthenticatedRequest,
-} from '../../middleware';
-import { asyncHandler, ValidationError, InvalidCredentialsError, ConflictError } from '../../middleware/errors';
-import { ProfileService } from '../../services/ProfileService';
-import { EmailVerificationService, getEmailVerificationService } from '../../services/EmailVerificationService';
-import { logger, logSecurityEvent } from '../../middleware';
+} from '../middleware';
+import { asyncHandler, ValidationError, InvalidCredentialsError, ConflictError } from '../middleware/errors';
+import { ProfileService } from '../services/ProfileService';
+import { EmailVerificationService, getEmailVerificationService } from '../services/EmailVerificationService';
+import { logger, logSecurityEvent } from '../middleware';
 
 const router = Router();
 const emailVerificationService = getEmailVerificationService();

@@ -40,10 +40,14 @@ export class HarmonizationEngine {
             return 0.0;
         }
 
-        const numerator = intersection.reduce((sum, key) => sum + vec1[key] * vec2[key], 0);
+        const numerator = intersection.reduce((sum, key) => {
+            const v1 = vec1[key] ?? 0;
+            const v2 = vec2[key] ?? 0;
+            return sum + v1 * v2;
+        }, 0);
 
-        const sum1_sq = Object.values(vec1).reduce((sum, val) => sum + val**2, 0);
-        const sum2_sq = Object.values(vec2).reduce((sum, val) => sum + val**2, 0);
+        const sum1_sq = Object.values(vec1).reduce((sum, val) => sum + (val ?? 0) ** 2, 0);
+        const sum2_sq = Object.values(vec2).reduce((sum, val) => sum + (val ?? 0) ** 2, 0);
 
         const denominator = Math.sqrt(sum1_sq) * Math.sqrt(sum2_sq);
 

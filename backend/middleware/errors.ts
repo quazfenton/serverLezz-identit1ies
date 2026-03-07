@@ -3,6 +3,8 @@
 // Custom Error Classes • Error Hierarchy • Standardized Error Responses
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import type { Request, Response, NextFunction } from "express";
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Base Application Error
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -160,7 +162,6 @@ export class InsufficientPermissionsError extends ForbiddenError {
 // Error Handler Middleware
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Request, Response, NextFunction } from "express";
 import { logger, logSecurityEvent } from "./index";
 import { sanitizeObjectForLogging } from "./auth";
 

@@ -100,8 +100,8 @@ export class HighDimSimulation {
         idxB = Math.floor(Math.random() * profileIds.length);
       }
 
-      const profileA = this.profiles.getProfile(profileIds[idxA]);
-      const profileB = this.profiles.getProfile(profileIds[idxB]);
+      const profileA = this.profiles.getProfile(profileIds[idxA]!);
+      const profileB = this.profiles.getProfile(profileIds[idxB]!);
 
       if (profileA && profileB) {
         await this.simulateInteraction(profileA, profileB);

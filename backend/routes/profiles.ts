@@ -11,10 +11,10 @@ import {
   createLimiter,
   sanitizeAll,
   AuthenticatedRequest,
-} from '../../middleware';
-import { asyncHandler, ProfileNotFoundError, ValidationError } from '../../middleware/errors';
-import { ProfileService, CreateProfileInput, UpdateProfileInput } from '../../services/ProfileService';
-import { logger } from '../../middleware';
+} from '../middleware';
+import { asyncHandler, ProfileNotFoundError, ValidationError } from '../middleware/errors';
+import { ProfileService, CreateProfileInput, UpdateProfileInput } from '../services/ProfileService';
+import { logger } from '../middleware';
 
 const router = Router();
 
@@ -102,7 +102,7 @@ router.get(
     const requestId = (req as any).requestId;
 
     const profileService = (req.app.locals as any).profileService as ProfileService;
-    const profile = await profileService.getProfileById(req.params.id, requestId);
+    const profile = await profileService.getProfileById(req.params.id!, requestId);
 
     // Don't include sensitive data in public response
     const { passwordHash: _, email: __, ...publicProfile } = profile;

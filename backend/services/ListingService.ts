@@ -177,7 +177,7 @@ export class ListingService {
     if (expectedVersion !== undefined && listing.version !== expectedVersion) {
       throw new ValidationError(
         "Listing was modified by another user. Please refresh and try again.",
-        { currentVersion: listing.version, expectedVersion },
+        { currentVersion: listing.version ?? 0, expectedVersion },
         requestId
       );
     }
@@ -186,8 +186,8 @@ export class ListingService {
     this.validateUpdateInput(input, requestId);
 
     // Update allowed fields
-    if (input.title !== undefined) listing.title = input.title.trim();
-    if (input.description !== undefined) listing.description = input.description.trim();
+    if (input.title !== undefined) listing.title = input.title!.trim();
+    if (input.description !== undefined) listing.description = input.description!.trim();
     if (input.pricing !== undefined) listing.pricing = input.pricing;
     if (input.availability !== undefined) listing.availability = input.availability;
     if (input.requirements !== undefined) listing.requirements = input.requirements;
@@ -195,7 +195,7 @@ export class ListingService {
     if (input.isActive !== undefined) listing.isActive = input.isActive;
 
     listing.updatedAt = new Date();
-    listing.version = (listing.version || 0) + 1;
+    listing.version = (listing.version ?? 0) + 1;
 
     try {
       await this.listingsRepo.save(listing);
@@ -229,7 +229,7 @@ export class ListingService {
 
     listing.isActive = false;
     listing.updatedAt = new Date();
-    listing.version = (listing.version || 0) + 1;
+    listing.version = (listing.version ?? 0) + 1;
 
     try {
       await this.listingsRepo.save(listing);

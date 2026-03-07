@@ -4,9 +4,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Router, Request, Response } from 'express';
-import { asyncHandler } from '../../middleware/errors';
-import { createMonitoringSystem, BusinessMetrics } from '../../middleware/health';
-import { logger } from '../../middleware';
+import { asyncHandler } from '../middleware/errors';
+import { createMonitoringSystem, BusinessMetrics } from '../middleware/health';
+import { logger } from '../middleware';
 
 const router = Router();
 
