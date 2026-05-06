@@ -14,30 +14,47 @@
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
     "strictPropertyInitialization": false,
-    "noImplicitAny": false,
-    "noImplicitReturns": false,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": false,
+    "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
+    
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
     "rootDir": "./",
-    "strict": false
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./*"],
+      "@shared/*": ["shared/*"],
+      "@backend/*": ["backend/*"],
+      "@mechanisms/*": ["mechanisms/*"]
+    }
   },
   "include": [
     "backend/**/*",
     "mechanisms/**/*",
-    "shared/**/*",
-    "frontend/**/*"
+    "shared/**/*"
   ],
   "exclude": [
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "node_modules"
+    "node_modules",
+    "mechanisms/llmOrchestration/**",
+    "src/**",
+    "examples/**",
+    "simulation.ts",
+    "demo-server.js"
   ],
   "ts-node": {
     "esm": false,
